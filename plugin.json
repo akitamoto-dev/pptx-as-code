@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "pptx-as-code",
+  "version": "0.1.0",
+  "description": "PowerPoint 資料をコードから作るスキル集（content-to-pptx / ms-format / image-to-pptx / pptx-lint / env-setup）。書式と文章の規範は ms-format にまとめてあり、外せば別のブランドでも作れる",
+  "author": {
+    "name": "akitamoto"
+  },
+  "keywords": [
+    "pptx",
+    "powerpoint",
+    "slides",
+    "pptxgenjs",
+    "skills"
+  ]
+}

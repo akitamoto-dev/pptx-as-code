@@ -1,0 +1,9 @@
+{
+  "name": "pptx-as-code",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/copilot-cli:1": {}
+  },
+  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash; copilot plugin marketplace add akitamoto-dev/pptx-as-code; copilot plugin install pptx-as-code@pptx-as-code; $HOME/.local/bin/claude plugin marketplace add akitamoto-dev/pptx-as-code; $HOME/.local/bin/claude plugin install pptx-as-code@pptx-as-code",
+  "remoteUser": "vscode"
+}

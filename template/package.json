@@ -1,0 +1,13 @@
+{
+  "name": "deck",
+  "version": "0.0.0",
+  "private": true,
+  "description": "スライド制作の作業ディレクトリ。node build.js で pptx / PDF / PNG を生成する",
+  "scripts": {
+    "build": "node build.js",
+    "check": "node build.js --no-pdf"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}

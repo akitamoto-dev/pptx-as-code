@@ -1,0 +1,6 @@
+# 作業ディレクトリの生成物（template をコピーした先で使う）
+node_modules/
+*.pptx
+*.pdf
+preview/
+.soffice-profile/

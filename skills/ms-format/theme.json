@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "name": "blue",
+  "description": "青を基調にした技術資料向けの既定テーマ。値は実運用デッキの pptx 実測に合わせてある",
+  "layout": { "width": 13.33, "height": 7.5, "left": 0.55, "contentWidth": 12.23, "contentBottom": 7.1 },
+  "fonts": {
+    "body": "Yu Gothic UI",
+    "code": "Consolas",
+    "fallback": { "body": ["Meiryo UI", "Noto Sans CJK JP", "Noto Sans JP"], "code": ["Cascadia Mono", "DejaVu Sans Mono"] }
+  },
+  "colors": {
+    "primary": "0078D4",
+    "primaryDark": "005A9E",
+    "primaryLight": "E8F2FC",
+    "panel": "EAF3FC",
+    "panelLine": "BFDCF3",
+    "rule": "D0D0D0",
+    "text": "333333",
+    "muted": "666666",
+    "white": "FFFFFF",
+    "danger": "B91C1C",
+    "dangerBg": "FBEAEA",
+    "dangerLine": "E0A6A6",
+    "safe": "107C10",
+    "code": { "bg": "1E1E1E", "text": "F2F2F2", "comment": "6A9955", "string": "CE9178", "highlight": "F48771" }
+  },
+  "title": { "x": 0.55, "y": 0.34, "w": 12.2, "h": 0.7, "fontSize": 28, "minFontSize": 24, "lineSpacingMultiple": 1.15 },
+  "keyMessage": { "x": 0.55, "y": 1.12, "w": 12.23, "h": 0.72, "fontSize": 16, "lineSpacingMultiple": 1.28 },
+  "section": { "y": 2.0, "h": 0.38, "fontSize": 16 },
+  "body": { "fontSize": 11.5, "minFontSize": 9.5, "lineSpacingMultiple": 1.3 },
+  "bullets": { "fontSize": 10.5, "lineSpacingMultiple": 1.22, "paraSpaceAfter": 4 },
+  "caption": { "fontSize": 11, "lineSpacingMultiple": 1.25 },
+  "label": { "fontSize": 12, "lineSpacingMultiple": 1.15 },
+  "table": { "fontSize": 11.5, "minFontSize": 10.5, "headerFontSize": 12, "borderWidth": 1, "cellMargin": [2, 6, 2, 6] },
+  "code": { "fontSize": 9.5, "minFontSize": 8.5, "paddingX": 0.18, "paddingY": 0.08, "radius": 0.06, "lineSpacingMultiple": 1.18 },
+  "shapes": { "boxRadius": 0.1, "boxLineWidth": 1.5, "pillFontSize": 12, "arrowWidth": 3, "ruleWidth": 1.5, "tagRadius": 0.08 },
+  "source": { "x": 0.55, "y": 7.16, "w": 12.23, "h": 0.26, "fontSize": 10 },
+  "divider": { "barHeight": 0.11, "labelFontSize": 14, "titleFontSize": 30, "subtitleFontSize": 13, "labelColor": "9CC7E8", "subtitleColor": "C8DDF0" },
+  "subDivider": { "labelFontSize": 14, "titleFontSize": 26, "subtitleFontSize": 13 },
+  "toc": { "fontSize": 16, "rowHeight": 0.6 },
+  "text": { "halfWidthEm": 0.48 },
+  "writing": {
+    "sectionBrackets": ["＜", "＞"],
+    "keyMessage": "主語と述語のある完全な文をですます調で書く。1 文なら句点なし、2 文なら 1 文目だけ句点",
+    "body": "常体（である調）または体言止め。キーメッセージ以外はすべてこの文体"
+  },
+  "imagePrompt": {
+    "background": "純白",
+    "palette": "青の濃淡とグレーだけで構成する",
+    "accent": "危険・攻撃・被害を示す要素だけ赤",
+    "style": "フラットで企業向けのテック図版。写実的な絵やアイソメトリック画にしない",
+    "text": "タイトル・説明文・ラベルなどの文字を一切入れない"
+  }
+}

@@ -1,0 +1,22 @@
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+
+# ビルドの生成物（作業ディレクトリ側）
+preview/
+output/
+.soffice-profile/
+
+# 接続先などの利用者固有の値
+.slide-image-gen.env
+
+.DS_Store
+
+# ローカル専用の作業メモ（配布物に含めない）
+README.local.md

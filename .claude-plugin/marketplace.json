@@ -1,0 +1,21 @@
+{
+  "name": "pptx-as-code",
+  "owner": {
+    "name": "akitamoto"
+  },
+  "metadata": {
+    "description": "スライド作成のスキル集と、画像生成 MCP の起動定義"
+  },
+  "plugins": [
+    {
+      "name": "pptx-as-code",
+      "source": "./",
+      "description": "スキル集（content-to-pptx / ms-format / image-to-pptx / pptx-lint / env-setup）。スライド作成にはこれだけでよい"
+    },
+    {
+      "name": "slide-image-gen",
+      "source": "./plugins/slide-image-gen",
+      "description": "画像生成 MCP の起動定義（Microsoft Foundry が必要）"
+    }
+  ]
+}
