@@ -205,8 +205,8 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
    | 方法 | コマンド |
    |---|---|
    | プラグイン（推奨） | `copilot plugin install slide-image-gen@pptx-as-code` / `claude plugin install slide-image-gen@pptx-as-code` |
-   | 直接登録 | `claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
-   | 直接登録（Copilot CLI） | `copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
+   | 直接登録 | `claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
+   | 直接登録（Copilot CLI） | `copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
 
    登録の前に、**クライアントから `uvx` が引けるかを §2 の `env -i PATH=...` で確かめる**。自分のシェルで `command -v uvx` が通っても、MCP を起動するのはクライアント本体なので当てにならない。引けない場合は §2 のとおり PATH の側を直す。
 

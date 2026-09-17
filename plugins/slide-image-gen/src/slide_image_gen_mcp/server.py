@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastmcp import FastMCP
-from fastmcp.exceptions import ToolError
 from pydantic import Field
 
 from . import foundry_client
@@ -28,11 +27,12 @@ Microsoft Foundry の画像生成モデルでスライド用 PNG を 1 枚生成
 - `prompt` は直近 1 発話だけでなく **会話履歴を統合** し、ユーザーの意図に沿った
   詳細な指示文を組み立てる。曖昧な指示でも聞き返さず、モデルに裁量を渡して
   1 枚作って結果を見せた方が早い。
-- 参考画像を踏襲したい時は `reference_image_path` に **作業ディレクトリ配下のファイルパス**
-  （相対または絶対）を渡す。チャットに直接添付された画像はファイルとしては渡せないため、
-  その場合はユーザーにファイル保存を依頼するか、画像の内容を言語化して `prompt` に書き起こす。
-- `reference_image_path` と `output_dir` は作業ディレクトリ（サーバーのカレントディレクトリ）
-  配下に限る。外を指すとエラーになる。
+- 参考画像を踏襲したい時は `reference_image_path` に **絶対パス** を渡す。チャットに直接
+  添付された画像はファイルとしては渡せないため、その場合はユーザーにファイル保存を依頼するか、
+  画像の内容を言語化して `prompt` に書き起こす。
+- **`output_dir` と `reference_image_path` は絶対パスで渡す。** このサーバーのカレント
+  ディレクトリは起動したクライアントが決めるもので、資料を作っているフォルダーとは限らない。
+  保存先は、資料を作っているフォルダーの中を絶対パスで指定する。
 
 ## 複数ページの一括作成
 - 複数枚をまとめて作る場合も、このツールを **1 枚ずつ順番に呼べばよい**。
@@ -65,28 +65,18 @@ def _resolve_unique_path(directory: Path, base_name: str) -> Path:
     return candidate
 
 
-def _allow_any_path() -> bool:
-    """環境変数 SLIDE_IMAGE_GEN_ALLOW_ANY_PATH=1 のときだけ、作業ディレクトリ配下に限る制限を外す。"""
-    return os.environ.get("SLIDE_IMAGE_GEN_ALLOW_ANY_PATH", "").strip() == "1"
+def _resolve_path(raw: str, label: str) -> Path:
+    """パスを絶対パスに解決する。
 
-
-def _resolve_within_cwd(raw: str, label: str) -> Path:
-    """パスを絶対パスに解決し、作業ディレクトリ配下でなければ ToolError を投げる。
-
-    相対パスは作業ディレクトリ（サーバーのカレントディレクトリ）基準で解決する。
-    配布物としての最低限の防御で、シンボリックリンクは解決してから判定する。
+    このサーバーのカレントディレクトリは、起動したクライアント（Copilot CLI、VS Code、
+    Claude Code）が決めるもので、資料を作っているフォルダーとは限らない。したがって
+    相対パスは意味が定まらない。呼び出す側は絶対パスを渡すこと。
+    相対パスを受け取った場合は、後方互換のためカレントディレクトリ基準で解決する。
     """
-    cwd = Path.cwd().resolve()
     path = Path(raw).expanduser()
     if not path.is_absolute():
-        path = cwd / path
-    path = path.resolve()
-    if _allow_any_path() or path == cwd or cwd in path.parents:
-        return path
-    raise ToolError(
-        f"{label} には作業ディレクトリ（{cwd}）配下のパスだけを指定できます: {path}。"
-        "制限を外すには環境変数 SLIDE_IMAGE_GEN_ALLOW_ANY_PATH=1 を設定してください。"
-    )
+        path = Path.cwd() / path
+    return path.resolve()
 
 
 @mcp.tool
@@ -109,7 +99,7 @@ def generate_slide_image(
         str | None,
         Field(
             description=(
-                "参考画像のファイルパス（作業ディレクトリ配下。相対または絶対）。指定すると "
+                "参考画像のファイルパス（**絶対パス**）。指定すると "
                 "images.edit API を使い、その画像を入力として生成する。チャットに直接添付された"
                 "画像はファイルとして渡せないため、保存してからパスを渡す。"
             )
@@ -119,8 +109,9 @@ def generate_slide_image(
         str | None,
         Field(
             description=(
-                "保存先ディレクトリ（作業ディレクトリ配下）。省略時は環境変数 DEFAULT_OUTPUT_DIR "
-                "（既定 ./output）を作業ディレクトリ基準で解決する。"
+                "保存先ディレクトリ（**絶対パス**）。資料を作っているフォルダーの中を指定する。"
+                "相対パスはこのサーバーのカレントディレクトリ基準になり、資料のフォルダーとは限らない。"
+                "省略時は環境変数 DEFAULT_OUTPUT_DIR（既定 ./output）。"
             )
         ),
     ] = None,
@@ -133,7 +124,8 @@ def generate_slide_image(
 
     画像サイズは PowerPoint ワイドスクリーンと同比率の 1792x1008 で固定。
     複数リージョンへ自動分散し、レート制限時は別リージョンへフェイルオーバーする。
-    reference_image_path と output_dir は作業ディレクトリ配下に限る。
+    reference_image_path と output_dir は絶対パスで渡す。相対パスはこのサーバーの
+    カレントディレクトリ基準になり、資料を作っているフォルダーとは限らない。
 
     戻り値:
         - saved_path: 保存した PNG の絶対パス
@@ -144,12 +136,11 @@ def generate_slide_image(
     """
     ref_path: Path | None = None
     if reference_image_path is not None:
-        ref_path = _resolve_within_cwd(reference_image_path, "reference_image_path")
+        ref_path = _resolve_path(reference_image_path, "reference_image_path")
         if not ref_path.is_file():
             raise FileNotFoundError(f"reference_image_path が見つかりません: {ref_path}")
 
-    # 既定の保存先も作業ディレクトリ基準で解決し、起動方法によって保存先が変わらないようにする
-    target_dir = _resolve_within_cwd(
+    target_dir = _resolve_path(
         output_dir or os.environ.get("DEFAULT_OUTPUT_DIR") or "./output", "output_dir"
     )
     target_dir.mkdir(parents=True, exist_ok=True)

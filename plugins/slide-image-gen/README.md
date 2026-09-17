@@ -1,6 +1,6 @@
 # slide-image-gen（スライド用の画像生成 MCP）
 
-Microsoft Foundry の画像生成モデル（GPT-Image-2）で 16:9 の PNG を 1 枚生成し、作業ディレクトリに保存する MCP サーバー。
+Microsoft Foundry の画像生成モデル（GPT-Image-2）で 16:9 の PNG を 1 枚生成し、指定された場所に保存する MCP サーバー。
 ツールは `generate_slide_image` の 1 つだけ。エージェントに「〇〇の図を画像で下書きして」と伝えると呼ばれる。
 
 - 複数リージョンの Foundry を束ね、レート制限（429）が起きたリージョンを避けて別リージョンへ自動フェイルオーバーする。連続生成でも失敗しにくい
@@ -125,10 +125,10 @@ FOUNDRY_TENANT_ID=00000000-0000-0000-0000-000000000000
 
 ```bash
 # Claude Code
-claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp
+claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp
 
 # GitHub Copilot CLI（~/.copilot/mcp-config.json に書かれる）
-copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp
+copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp
 ```
 
 ## 5. 使い方
@@ -137,7 +137,7 @@ copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-
 
 - **文字を入れない図版だけ**を指示する。タイトル・ラベル・説明文は画像に入れず、資料側でネイティブテキストとして重ねる（画像内の文字は精度が低く、編集もできない）
 - 複数枚は 1 枚ずつ順に呼ばれる。「5 ページ分をそれぞれ画像にして」で足りる。サーバーが呼び出しごとに別リージョンへ分散し、429 は別リージョンで再試行する
-- 参考画像は作業ディレクトリ内のファイルパスで渡す（「`docs/sample.png` を参考に、同じレイアウトで緑基調に」）。チャットに直接添付した画像は MCP に渡らないので、ファイルに保存してから指示するか、画像の内容を言葉で伝える
+- 参考画像は**絶対パス**で渡す（「`/home/me/deck/source/sample.png` を参考に、同じレイアウトで緑基調に」）。チャットに直接添付した画像は MCP に渡らないので、ファイルに保存してから指示するか、画像の内容を言葉で伝える
 
 ## 6. 環境変数
 
@@ -147,10 +147,9 @@ copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-
 | `FOUNDRY_ENDPOINT` | ※ | — | 単一エンドポイント（後方互換）。両方あれば和集合 |
 | `IMAGE_DEPLOYMENT_NAME` | yes | — | 全リージョン共通のデプロイ名（例 `gpt-image-2`） |
 | `FOUNDRY_TENANT_ID` | no | — | Foundry が属する Entra テナント ID。`az login` のテナントと異なるときに指定する |
-| `DEFAULT_OUTPUT_DIR` | no | `./output` | 既定の保存先。作業ディレクトリ基準で解決する |
+| `DEFAULT_OUTPUT_DIR` | no | `./output` | 既定の保存先。相対パスはサーバーのカレントディレクトリ基準になるため、絶対パスを推奨 |
 | `LB_COOLDOWN_SECONDS` | no | `60` | 429 時に `Retry-After` が無い場合のクールダウン秒数 |
 | `SLIDE_IMAGE_GEN_ENV_FILE` | no | — | env ファイルの場所を明示する（探索順の先頭） |
-| `SLIDE_IMAGE_GEN_ALLOW_ANY_PATH` | no | — | `1` で、パスを作業ディレクトリ配下に限る制限を外す |
 
 ※ いずれか一方が必要。シークレットは置かない（トークンは `DefaultAzureCredential` が取得する）。
 
@@ -162,12 +161,12 @@ copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-
 |---|---|---|---|
 | `prompt` | string | （必須） | 画像生成の指示文。会話履歴を統合した詳細な指示を推奨 |
 | `quality` | `low` / `medium` / `high` | `medium` | 画質。`high` は時間とコストが増える |
-| `reference_image_path` | string | null | 参考画像のパス（作業ディレクトリ配下）。指定時は `images.edit` |
-| `output_dir` | string | env で決まる | 保存先（作業ディレクトリ配下） |
+| `reference_image_path` | string | null | 参考画像のパス（**絶対パス**）。指定時は `images.edit` |
+| `output_dir` | string | env で決まる | 保存先（**絶対パス**）。資料を作っているフォルダーの中を指定する |
 | `filename_hint` | string | null | ファイル名ヒント（英数字とハイフンに正規化） |
 
-`reference_image_path` と `output_dir` は、解決後の絶対パスが作業ディレクトリ（MCP サーバーのカレントディレクトリ）配下でなければエラーになる。
-配布物としての最低限の防御で、`SLIDE_IMAGE_GEN_ALLOW_ANY_PATH=1` で外せる。
+**`reference_image_path` と `output_dir` は絶対パスで渡す。** このサーバーのカレントディレクトリは、起動したクライアント（Copilot CLI、VS Code、Claude Code）が決めるもので、資料を作っているフォルダーとは限らない。相対パスを渡すと、意図しない場所に保存される。
+相対パスは後方互換のためカレントディレクトリ基準で解決するが、頼らない。
 
 戻り値: `saved_path`（絶対パス）、`size`（`1792x1008`）、`model`（デプロイ名）、`endpoint`（生成したリージョン）、`bytes`。
 
@@ -203,7 +202,7 @@ claude mcp add -s user slide-image-gen -- uv run --project ~/pptx-as-code/plugin
 ```
 
 `uvx` 経由の本体は取得結果がキャッシュされる。同じタグのまま更新を取り込むには
-`uvx --refresh --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` を一度実行する（タグを変えた場合は起動定義のタグを変える）。
+`uvx --refresh --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` を一度実行する（タグを変えた場合は起動定義のタグを変える）。
 
 ## 11. ディレクトリ構成
 
