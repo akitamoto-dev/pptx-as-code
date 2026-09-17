@@ -45,8 +45,9 @@ module.exports = function (pres, WORK) {
   const warned = new Set();
   const warn = (msg) => { if (!warned.has(msg)) { warned.add(msg); console.warn("lib.js: " + msg); } };
 
-  // ---- 文字幅の概算（半角 0.48em・全角 1.0em）。折り返しや自動縮小の判定に使う ----
-  const HALF = (T.text && T.text.halfWidthEm) || 0.48;
+  // ---- 文字幅の概算（半角 0.6em・全角 1.0em）。折り返しや自動縮小の判定に使う ----
+  // 半角は実測で全角の 0.6 掛け程度。0.5 で見積もると幅を過小評価し、折り返して上の要素と重なる
+  const HALF = (T.text && T.text.halfWidthEm) || 0.6;
   L.em = (str) => [...String(str)].reduce((a, c) => a + (c.charCodeAt(0) < 0x100 ? HALF : 1), 0);
   L.widthIn = (str, size) => (L.em(str) * size) / 72;
 

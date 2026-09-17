@@ -71,11 +71,11 @@
   },
   "body": {
     "fontSize": 11.5,
-    "minFontSize": 9.5,
+    "minFontSize": 11,
     "lineSpacingMultiple": 1.3
   },
   "bullets": {
-    "fontSize": 10.5,
+    "fontSize": 11.5,
     "lineSpacingMultiple": 1.22,
     "paraSpaceAfter": 4
   },
@@ -140,7 +140,7 @@
     "rowHeight": 0.6
   },
   "text": {
-    "halfWidthEm": 0.48
+    "halfWidthEm": 0.6
   },
   "writing": {
     "sectionBrackets": [
@@ -155,6 +155,6 @@
     "palette": "グレーの濃淡だけで構成する",
     "accent": "危険・注意を示す要素だけ赤",
     "style": "フラットで平易な図版。写実的な絵やアイソメトリック画にしない",
-    "text": "タイトル・説明文・ラベルなどの文字を一切入れない"
+    "text": "タイトル・見出し・図中のラベルは短い日本語で入れる。本文の長文と出典は入れず、下部にまとめ帯を置かない"
   }
 }

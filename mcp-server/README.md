@@ -1,22 +1,22 @@
 # slide-image-gen（スライド用の画像生成 MCP）
 
 Microsoft Foundry の画像生成モデル（GPT-Image-2）で 16:9 の PNG を 1 枚生成し、指定された場所に保存する MCP サーバー。
-ツールは `generate_slide_image` の 1 つだけ。エージェントに「〇〇の図を画像で下書きして」と伝えると呼ばれる。
+ツールは `generate_slide_image` の 1 つだけ。エージェントに「〇〇のスライドを画像で作成」と指示すると呼び出される。
 
 - 複数リージョンの Foundry を束ね、レート制限（429）が起きたリージョンを避けて別リージョンへ自動フェイルオーバーする。連続生成でも失敗しにくい
 - 認証は Entra ID（`DefaultAzureCredential`）だけ。`az login` 済みなら API キーは不要
 - 参考画像を渡すとそのスタイルを踏襲する（`images.edit` API）
 - 接続先は MCP サーバー自身が env ファイルから読む。起動定義に利用者固有の値を書かないので、起動定義は全員同じ 1 行になる
 
-図が中心のスライドを、画像として先に試すための MCP。図の自由度と仕上がりに影響する。Azure を使えない環境では、これなしでも資料は作成できる（図の構成を会話で決め、図形とアイコンで直接作る）。
+スライドの構成を、コードで組む前に画像で設計するための MCP。図の自由度と仕上がりに影響する。Azure を使用できない環境では、これを導入しなくても資料は作成できる（図の構成を会話で決定し、図形とアイコンで直接作成する）。
 生成画像は資料に貼らず、pptxgenjs のネイティブ要素で描き直す前提（文字の精度と編集可能性のため）。
 利用には Azure サブスクリプションが必要。
 
 ## 1. 前提
 
-- [uv](https://docs.astral.sh/uv/)。`uvx` がリポジトリから MCP 本体を直接取得して実行するので、clone は不要
-- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)。`az login` でサインインしておく。MCP はそのトークンを使う
-- Python 3.10 以上。Foundry をデプロイする `infra/deploy.py` が使う（標準ライブラリだけで動く）
+- [uv](https://docs.astral.sh/uv/)。MCP 本体はプラグインに同梱されており、`uv run` が依存を解決して起動する
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)。`az login` で事前にサインインする。MCP はそのトークンを使用する
+- Python 3.10 以上。Foundry をデプロイする `infra/deploy.py` が使用する（標準ライブラリのみで動作する）
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -35,18 +35,18 @@ python3 infra/deploy.py --check   # 調べた結果だけを表示する。Azure
 python3 infra/deploy.py           # デプロイし、使えるリージョンの接続先を env ファイルに書き込む
 ```
 
-Windows では `python3` の代わりに `py` を使う。
+Windows では `python3` の代わりに `py` を使用する。
 
 作成するリソースは次のとおり。
 
 | リソース | 名前と内容 |
 |---|---|
 | リソースグループ | `rg-slide-image-gen-mcp` |
-| Foundry（AI Services）アカウント | `aif-slide-image-gen-<6 文字>-<リージョン>`。6 文字はサブスクリプション ID から作る |
+| Foundry（AI Services）アカウント | `aif-slide-image-gen-<6 文字>-<リージョン>`。6 文字はサブスクリプション ID から生成する |
 | モデルのデプロイ | `gpt-image-2`（GlobalStandard）。リージョンあたりの capacity は 2 まで |
 | ロール割り当て | 実行したユーザーに、各アカウントの Cognitive Services User |
 
-`aif` は、Foundry アカウント（kind: AIServices）に対する [Azure リソースの略語の推奨](https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations)（リソースの種類ごとに使う接頭辞が分かる）に合わせている。
+`aif` は、Foundry アカウント（kind: AIServices）に対する [Azure リソースの略語の推奨](https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations)（リソースの種類ごとの接頭辞が分かる）に合わせている。
 
 アカウント名はカスタムサブドメインとして Azure 全体で一意である必要がある。サブスクリプションごとに異なる 6 文字を含めるため、別の利用者と名前が衝突せず、同じサブスクリプションで再実行すれば同じ名前になる。
 
@@ -79,7 +79,7 @@ env ファイルには、実行したユーザーが呼び出せるリージョ�
 | `--no-role` | — | ロール割り当てを作成しない（ロールを別途管理する場合） |
 
 無申請のクォータは、1 リージョンあたり capacity 2（約 2 RPM）。足りなければリージョンごとに増加を申請する。手順は [Azure OpenAI のクォータ管理](https://learn.microsoft.com/azure/ai-foundry/openai/how-to/quota)（リージョン単位で割り当てを引き上げる方法が分かる）。
-対応リージョンはモデルの更新で変わる。スクリプトは指定されたリージョンごとに提供状況を確かめるが、新たに対応したリージョンを使うには `--regions` で指定する。対応状況は [モデルのリージョン可用性](https://learn.microsoft.com/azure/ai-foundry/openai/concepts/models#model-summary-table-and-region-availability) で確認する。
+対応リージョンはモデルの更新で変わる。スクリプトは指定されたリージョンごとに提供状況を確かめるが、新たに対応したリージョンを使用するには `--regions` で指定する。対応状況は [モデルのリージョン可用性](https://learn.microsoft.com/azure/ai-foundry/openai/concepts/models#model-summary-table-and-region-availability) で確認する。
 
 既存のアカウントを削除してクォータを空ける場合は、デプロイを先に削除してからアカウントを削除する。アカウントを先に削除すると、purge するまでの 48 時間はクォータが解放されない。
 [クォータの管理: リソースの削除](https://learn.microsoft.com/azure/foundry/openai/how-to/quota#resource-deletion) に、削除の順序と、クォータが解放されない期間が書かれている。
@@ -101,7 +101,7 @@ MCP サーバーは起動時に次の順で探し、最初に見つかった 1 �
 # ~/.config/slide-image-gen/env
 FOUNDRY_ENDPOINTS=https://<アカウント名 1>.cognitiveservices.azure.com/,https://<アカウント名 2>.cognitiveservices.azure.com/
 IMAGE_DEPLOYMENT_NAME=gpt-image-2
-# Foundry が属するテナント（az login のテナントと異なるときに効く）
+# Foundry が属するテナント（az login のテナントと異なる場合に指定する）
 FOUNDRY_TENANT_ID=00000000-0000-0000-0000-000000000000
 ```
 
@@ -109,34 +109,30 @@ FOUNDRY_TENANT_ID=00000000-0000-0000-0000-000000000000
 
 接続先を env ファイルに置くため、起動定義はどの経路でも同じ 1 行になる。登録は 2 通り。
 
-### (a) プラグイン `slide-image-gen` を入れる
+### (a) プラグイン `pptx-as-code` を導入する（推奨）
 
-起動定義が自動で有効になる。設定ファイルへの追記は不要。
-
-| ツール | コマンド |
-|---|---|
-| GitHub Copilot CLI | `copilot plugin marketplace add akitamoto-dev/pptx-as-code` のあと `copilot plugin install slide-image-gen@pptx-as-code` |
-| Claude Code | `claude plugin marketplace add akitamoto-dev/pptx-as-code` のあと `claude plugin install slide-image-gen@pptx-as-code --scope user` |
-| VS Code | Copilot CLI で入れたものを自動で認識する |
+起動定義（ルートの `mcp.json`）がプラグインに同梱されているため、**スキルを入れた時点で MCP も有効になる。** 設定ファイルへの追記は不要。導入手順は [プラグインの README](../README.md#導入)。
 
 ### (b) ユーザー設定に 1 行書く
 
-プラグインを使わない人（clone して育てる人など）向け。
+プラグインを使用しない場合（clone して `--plugin-dir` で読み込ませる場合など）に使用する。
 
 ```bash
 # Claude Code
-claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp
+claude mcp add -s user slide-image-gen -- uv run --directory ~/pptx-as-code/mcp-server slide-image-gen-mcp
 
 # GitHub Copilot CLI（~/.copilot/mcp-config.json に書かれる）
-copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp
+copilot mcp add slide-image-gen -- uv run --directory ~/pptx-as-code/mcp-server slide-image-gen-mcp
 ```
 
 ## 5. 使い方
 
 クライアントを再起動して MCP が認識されたら、チャットで指示する。画像は 16:9（1792x1008）で保存される。
 
-- **文字を入れない図版だけ**を指示する。タイトル・ラベル・説明文は画像に入れず、資料側でネイティブテキストとして重ねる（画像内の文字は精度が低く、編集もできない）
+- ツール `generate_slide_image` はモデルが呼び出す。利用者から明示的に呼び出す場合は、プロンプト `generate` を使用する（Claude Code では `/mcp__slide-image-gen__generate <主題>`）。チャットで「slide-image-gen で画像を作成」と指示してもよい
+- **スライド 1 枚の案**を指示する。タイトル・見出し・図中のラベルを短い日本語で含んだ構図にすると、配置ごと設計してもらえる。文字の精度が要るのは資料側なので、画像の文字は構図を読むためのものとして扱う
 - 複数枚は 1 枚ずつ順に呼ばれる。「5 ページ分をそれぞれ画像にして」で足りる。サーバーが呼び出しごとに別リージョンへ分散し、429 は別リージョンで再試行する
+- 生成画像は資料に貼らずネイティブ要素で描き直すため、成果物に画像は残らない。独自のモチーフだけを切り出して使う場合は [顧客著作権コミットメント](https://learn.microsoft.com/azure/foundry/responsible-ai/openai/customer-copyright-commitment)（Microsoft が一定の第三者著作権クレームに対し顧客を防御する条件が書かれている）を確認する。生成画像には [Content Credentials](https://learn.microsoft.com/azure/ai-foundry/openai/concepts/content-credentials)（AI 生成であることを示す C2PA のメタデータ）が付くが、切り出しや透過処理で失われる
 - 参考画像は**絶対パス**で渡す（「`/home/me/deck/source/sample.png` を参考に、同じレイアウトで緑基調に」）。チャットに直接添付した画像は MCP に渡らないので、ファイルに保存してから指示するか、画像の内容を言葉で伝える
 
 ## 6. 環境変数
@@ -160,7 +156,7 @@ copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-
 | 引数 | 型 | 既定値 | 説明 |
 |---|---|---|---|
 | `prompt` | string | （必須） | 画像生成の指示文。会話履歴を統合した詳細な指示を推奨 |
-| `quality` | `low` / `medium` / `high` | `medium` | 画質。`high` は時間とコストが増える |
+| `quality` | `low` / `medium` / `high` | `high` | 画質。既定の `high` は画像内の日本語が崩れにくい。構図だけを速く見たいときだけ下げる |
 | `reference_image_path` | string | null | 参考画像のパス（**絶対パス**）。指定時は `images.edit` |
 | `output_dir` | string | env で決まる | 保存先（**絶対パス**）。資料を作っているフォルダーの中を指定する |
 | `filename_hint` | string | null | ファイル名ヒント（英数字とハイフンに正規化） |
@@ -194,15 +190,15 @@ clone したソースで動かすときは `uv run` を使う。起動定義に�
 
 ```bash
 git clone https://github.com/akitamoto-dev/pptx-as-code.git ~/pptx-as-code
-cd ~/pptx-as-code/plugins/slide-image-gen && uv sync          # 依存を uv.lock どおりに入れる
-uv run --project ~/pptx-as-code/plugins/slide-image-gen slide-image-gen-mcp   # 手動で起動して確かめる（Ctrl+C で終了）
+cd ~/pptx-as-code/mcp-server && uv sync          # 依存を uv.lock どおりに入れる
+uv run --project ~/pptx-as-code/mcp-server slide-image-gen-mcp   # 手動で起動して確かめる（Ctrl+C で終了）
 
 # 起動定義（Claude Code の例。Copilot CLI は copilot mcp add）
-claude mcp add -s user slide-image-gen -- uv run --project ~/pptx-as-code/plugins/slide-image-gen slide-image-gen-mcp
+claude mcp add -s user slide-image-gen -- uv run --project ~/pptx-as-code/mcp-server slide-image-gen-mcp
 ```
 
-`uvx` 経由の本体は取得結果がキャッシュされる。同じタグのまま更新を取り込むには
-`uvx --refresh --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` を一度実行する（タグを変えた場合は起動定義のタグを変える）。
+依存が古いまま残っている場合は
+`uv sync --directory ~/pptx-as-code/mcp-server` を実行して依存を入れ直す。
 
 ## 11. ディレクトリ構成
 
@@ -211,8 +207,8 @@ pptx-as-code/
 ├── infra/
 │   ├── deploy.py                    リージョンごとに調べてデプロイし、env ファイルに書き込む
 │   └── foundry-image.bicep          1 リージョン分（アカウント + デプロイ + ロール割り当て）
-└── plugins/slide-image-gen/         プラグインの実体。起動定義と本体を同じ場所に置く
-    ├── plugin.json / mcp.json       起動定義（`.claude-plugin/plugin.json` は Claude Code 用）
+├── mcp.json                         起動定義。プラグインのルートに置くと読み込まれる
+└── mcp-server/                      MCP 本体。mcp.json がこの場所を指して起動する
     ├── pyproject.toml / uv.lock     エントリポイント定義と依存の固定
     └── src/slide_image_gen_mcp/
         ├── __main__.py              エントリポイント（env ファイルの読み込み → stdio 起動）
@@ -221,9 +217,9 @@ pptx-as-code/
         ├── endpoint_pool.py         ラウンドロビン + フェイルオーバー + クールダウン
         └── foundry_client.py        Foundry 呼び出し（Entra ID 認証）
 
-起動定義と本体を同じディレクトリに置いているのは、構成を 1 か所にまとめるため。
-`mcp.json` は変数を使わず、公開リポジトリのタグを `uvx --from` で直接指している。
-`${PLUGIN_ROOT}` のような変数は、展開する主体がクライアントごとに違い、VS Code は同梱の
-別の Copilot CLI を使うため、どの環境でも同じように動くとは限らない。変数を使わなければ
-その差に左右されない。
+起動定義をプラグインのルートに置いているのは、スキルと MCP を 1 つのプラグインとして配るため。導入も更新も 1 コマンドで済む。
+`mcp.json` は `${CLAUDE_PLUGIN_ROOT}` でプラグインの導入先を指し、同梱の本体をその場で起動する。
+リポジトリから取り直さないので、起動にネットワークが要らず、タグの管理も不要になる。
+`${PLUGIN_ROOT}` は Copilot CLI が展開するが Claude Code は展開しない。`${CLAUDE_PLUGIN_ROOT}`
+なら両方が展開するため、こちらを使っている。
 ```

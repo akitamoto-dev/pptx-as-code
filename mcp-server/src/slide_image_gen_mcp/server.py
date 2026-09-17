@@ -27,6 +27,10 @@ Microsoft Foundry の画像生成モデルでスライド用 PNG を 1 枚生成
 - `prompt` は直近 1 発話だけでなく **会話履歴を統合** し、ユーザーの意図に沿った
   詳細な指示文を組み立てる。曖昧な指示でも聞き返さず、モデルに裁量を渡して
   1 枚作って結果を見せた方が早い。
+- 作らせるのは **スライド 1 枚の案**。タイトル・見出し・図中のラベルを短い日本語で含めて
+  指示する。文字を抜いた図版だけを作らせない。配置と情報の並びごと設計させることが、
+  画像生成を使う理由になる。文字の精度が要るのは資料側なので、画像の文字は構図を
+  読むためのものとして扱う。
 - 参考画像を踏襲したい時は `reference_image_path` に **絶対パス** を渡す。チャットに直接
   添付された画像はファイルとしては渡せないため、その場合はユーザーにファイル保存を依頼するか、
   画像の内容を言語化して `prompt` に書き起こす。
@@ -45,6 +49,28 @@ Microsoft Foundry の画像生成モデルでスライド用 PNG を 1 枚生成
 
 
 mcp = FastMCP(name="slide-image-gen", instructions=SERVER_INSTRUCTIONS)
+
+
+@mcp.prompt
+def generate(subject: str) -> str:
+    """スライドの案を画像で作る。主題を渡すと、その内容の 1 ページ分を生成する。
+
+    ツールはモデルが呼ぶもので、人がスラッシュコマンドから選ぶことはできない。
+    画像生成だけを人の側から明示的に呼べるように、この prompt を用意している。
+    引数はスペースで区切られるため、自由文を受ける subject は 1 つだけにしている。
+    """
+    return (
+        f"{subject} を説明するスライド 1 ページ分の案を、画像で作ってください。\n"
+        "generate_slide_image を呼びます。次を守ってください。\n"
+        "- 保存先は資料を作っているフォルダーの中を絶対パスで指定する。"
+        "会話で決まっていなければ、どこへ保存するか尋ねる\n"
+        "- タイトル・見出し・図中のラベルを短い日本語で含める。文字を抜いた図版だけにしない\n"
+        "- 書式スキル（ms-format など）を併用している場合は、その theme.json の "
+        "colors と imagePrompt から作風を組み立てる。色を直書きしない\n"
+        "- 生成できたら保存先のパスを伝え、画像を見せる\n"
+        "\n"
+        "この指示では pptx に変換しません。PowerPoint まで作る場合は image-to-pptx を使います。"
+    )
 
 
 def _slugify(text: str) -> str:
@@ -93,8 +119,13 @@ def generate_slide_image(
     ],
     quality: Annotated[
         Literal["low", "medium", "high"],
-        Field(description="生成品質。high は時間とコストが増えるが日本語の崩れが少ない。"),
-    ] = "medium",
+        Field(
+            description=(
+                "生成品質。既定の high は画像内の日本語の崩れが少ない。構図だけを速く見たいときは "
+                "medium や low にできるが、文字を含む案では high のままにする。"
+            )
+        ),
+    ] = "high",
     reference_image_path: Annotated[
         str | None,
         Field(

@@ -148,7 +148,9 @@ async function setSlideNames(file, titles) {
 
 // ---- (2) 規格違反の正規化と検査 ----
 function normalize(py) {
-  if (!py) { note("Python 3 が無いため normalize を省略。PowerPoint で開く前に tools/normalize.py を通すこと"); return true; }
+  // 正規化を通していない pptx に PDF を添えない。PDF が出せたことは PowerPoint で開ける根拠に
+  // ならないので、PDF があると検査を済ませたと誤解される
+  if (!py) { note("Python 3 が無いため normalize を実行できない。PowerPoint で開く前に tools/normalize.py を通すこと"); return false; }
   const script = path.join(TOOLS, "normalize.py");
   const r1 = run(py[0], [...py.slice(1), script, OUT]);
   process.stdout.write("(2) " + (r1.stdout || "") + (r1.stderr || ""));
@@ -212,8 +214,9 @@ function toPng(py) {
 (async () => {
   const count = await buildPptx();
   const py = findPython();
-  normalize(py);
+  const normalized = normalize(py);
   if (args.noPdf) { console.log(`完了: ${count} 枚。PDF は省略（--no-pdf）`); return; }
+  if (!normalized) { console.log(`完了: ${count} 枚（pptx のみ）。normalize を通していないため PDF は出さない`); return; }
   if (!toPdf()) { console.log(`完了: ${count} 枚（pptx のみ）`); return; }
   if (args.noPng) { console.log(`完了: ${count} 枚（pptx, pdf）`); return; }
   toPng(py);

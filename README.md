@@ -2,181 +2,119 @@
 
 コーディングエージェントで PowerPoint 資料を作成するためのプラグイン。GitHub Copilot と Claude Code に対応する。
 
-Markdown やテキスト、スライドの画像を渡すと、スライドをコードで組み立て、PowerPoint ファイルと PDF を出力する。作成、確認、修正は VS Code の中で行う。
+内容を渡すとスライドをコードで組み立て、PowerPoint ファイルと PDF を出力する。中身は画像ではなくテキスト・図形・表で構成されるため、PowerPoint でそのまま編集できる。作成・確認・修正は VS Code 上で完結する。
 
-## 含まれるハーネス
+## 含まれるもの
 
-| カテゴリ | 名前 | 役割 | 構成要素 |
+| 種類 | 名前 | 役割 | 使用する場面 |
 |---|---|---|---|
-| Skills | `content-to-pptx` | Markdown やテキストから、スライドをコードで組み立てる | 内容を構造化してスライドに落とす手順 |
-| Skills | `image-to-pptx` | スライドの画像を、編集できる PowerPoint ファイルに変換する。変換元の画像が無い場合は `slide-image-gen`（MCP）を呼んで生成してから変換する | 画像から座標を読む手順、切り出し・比較・検証のスクリプト |
-| Skills | `pptx-lint` | 出来上がりを 1 ページずつ検査し、崩れとルール違反を指摘する | 検査の観点、ページ番号付きで返す形式 |
-| Skills | `ms-format` | 青基調の決まった書式と、文章・構成のルールを与える | 書式の定義、文章と構成のルール、アイコン、型の見本 |
-| Skills | `env-setup` | 実行に必要なものを点検して導入する | 点検スクリプト、OS 別の導入コマンド |
-| MCP | `slide-image-gen` | 画像形式のスライドを 1 枚生成する。`image-to-pptx` から呼ばれるほか、単独でも使用できる | Microsoft Foundry での画像生成。別のプラグインとして追加する（Azure サブスクリプションが必要） |
+| Skill | `content-to-pptx` | 内容からスライドをコードで直接組み立てる | 表・箇条書き・文章が中心の資料 |
+| Skill | `image-to-pptx` | スライドを画像で設計し、編集できる pptx へ再構成する | 図が中心の資料、レイアウトの自由度が必要な場合 |
+| Skill | `ms-format` | 青基調の所定フォーマットと、文章・構成の規範を与える | **その書式で作成する場合のみ。** 別の書式やブランドでは使用しない |
+| Skill | `pptx-lint` | 出力を 1 ページずつ検査し、崩れと規範違反をページ番号付きで返す | 作成の完了時と、構成を変更した場合 |
+| Skill | `env-setup` | 実行に必要なものを点検して導入する | 初回と、動作しなくなった場合 |
+| MCP | `slide-image-gen` | スライドの案を画像で生成する | `image-to-pptx` が呼び出す。単独でも使用できる |
+
+すべて 1 つのプラグインに含まれる。導入も更新も 1 回で完了する。
+画像生成 MCP には Azure サブスクリプションが必要だが、未設定でもスキルは動作する（画像を経由する方法のみ使用できない）。
+構成の詳細は [docs/architecture.md](docs/architecture.md)。
 
 ## 作成方法
 
-**入力がテキストだけなら 1、画像を使うなら 2 を選ぶ。**
-図が中心のスライドは、画像を 1 枚作ってから変換する 2 の方法が向いている。
-`ms-format` は Microsoft フォーマットで作成する場合に使用する。別の書式で作成する場合は省く。
+2 通りある。**出力形式は同じで、成果はどちらも作業フォルダの定義ファイル（コード）に残る。**
+書式を指定する場合は、どちらにも `ms-format` を併用する。
 
-### 1. 内容から直接作成する方法
+### 内容から直接作成する
 
-Markdown やテキスト、会話での指示を構造化し、スライドをコードで定義する。
+Markdown・テキスト・会話での指示を、そのままスライドの定義に変換する。表・箇条書き・文章が中心の資料に適する。このスキルは画像を扱わず、画像生成も呼び出さない。
 
-| 順 | スキル | 処理 |
+### 画像を経由して作成する
+
+**画像生成モデルの表現力を、資料の品質に反映させるための方法。**
+
+コードだけで図を組み立てると、既存の型の組み合わせに限られる。画像生成モデルは、伝えたい内容に応じてレイアウト・図の構造・要素の配置を設計できる。そこで**完成形に近いスライドを先に画像で生成し**、それを設計図として PowerPoint のテキスト・図形・表へ再構成する。自由度の高いレイアウトを、編集できる形で得られる。
+
+起点は 3 通り。
+
+| 入力 | 処理 |
+|---|---|
+| 内容のみ（テキスト・Markdown・会話での指示） | その要件に沿ったスライドの案を画像で生成し、変換する |
+| 内容と参考画像（「このフォーマットで作成」） | 参考画像の書式を踏まえた案を生成し、変換する |
+| 変換対象の画像（「この画像を pptx に変換」） | 生成を経由せず、その画像を変換する |
+
+上 2 つがスライドの作成、3 つ目は既存の資料を編集できる形へ変換する作業にあたる。
+ページ数は問わない。複数ページの場合は、ページごとに案を生成して変換する。
+
+**生成した画像はスライドに配置しない。** 配置すると文字を編集できず、画像内の文字は精度も低い。ネイティブのテキスト・図形・表として再構成する。
+pptx を伴わず画像のみが必要な場合は、チャットで「slide-image-gen で〇〇のスライド画像を作成」と指示する。構図を先に確認する場合に適する。
+
+## 作成後の修正
+
+**修正の規模に応じて、やり直す範囲が変わる。** 文言の修正のたびに画像を再生成したり、全ページを検査したりはしない。
+
+| 修正の内容 | 画像生成 | `pptx-lint` |
 |---|---|---|
-| 1 | `ms-format` | 青基調の書式と、文章・構成のルールを読み込む（Microsoft フォーマットで作成する場合） |
-| 2 | **`content-to-pptx`** | 渡された内容を 1 スライド 1 論点に構造化し、定義を書く。<br>PowerPoint ファイル・PDF・確認用の画像を出力する |
-| 3 | `pptx-lint` | 出力を 1 ページずつ検査し、崩れとルール違反をページ番号付きで返す |
+| 文言、数値、色、強調、要素の位置、表や本文の追記 | 再実行しない | 呼び出さない（該当ページのみ確認） |
+| スライドの追加・削除・並べ替え、見出し構成の変更 | 再実行しない | 呼び出す |
+| 図のメタファーや構図そのものの変更 | 再実行する | 呼び出す |
 
-### 2. 画像を経由して作成する方法
+判断に迷う場合は、定義ファイルの修正から着手する。図の説得力が不足する場合にのみ画像生成へ戻す。
 
-画像形式のスライドを分解し、編集できる PowerPoint ファイルに変換する。変換元の画像は、渡されたものを使うか、その場で生成する。
+## 導入
 
-| 順 | スキル | 処理 |
-|---|---|---|
-| 1 | `ms-format` | 書式と作風を読み込む。画像を生成するときの指示も、この書式から組み立てる（Microsoft フォーマットで作成する場合） |
-| 2 | **`image-to-pptx`** | まず変換元の画像を決める。<br>・画像が渡されていれば、その画像を変換元にする（他社の資料、過去の PDF、受け取ったスクリーンショットなど）<br>・渡されていなければ、画像生成 MCP（`slide-image-gen`）を呼び、生成された画像を変換元にする<br>次に、その画像から座標を読み取り、文字・図形・矢印・表・アイコンに分解して定義を書く。<br>PowerPoint ファイル・PDF・確認用の画像を出力し、元画像とレンダリング結果を比較して補正する |
-| 3 | `pptx-lint` | 出力を 1 ページずつ検査し、崩れとルール違反をページ番号付きで返す |
+ツール本体の導入手順は [GitHub Copilot CLI のインストール](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) と [Claude Code のセットアップ](https://code.claude.com/docs/en/setup) を参照。
 
-**生成した画像はスライドに配置せず、図形とアイコンで再構成する。**
-`slide-image-gen` を単独で呼び、画像を先に確認してから変換に進むこともできる。
+### 1. プラグインを導入する
 
-### （補足）作成後の修正
-
-作成の流れとは別に、作成済みの資料を修正する場合の戻り先を示す。
-どちらの方法でも成果は同じ定義ファイルに残るため、修正内容によって戻る場所が変わる。
-
-| 修正内容 | 戻り先 | 使用するスキル |
-|---|---|---|
-| 文言、配置、色、表の内容 | 定義ファイルを修正し、作業フォルダでビルドし直す | **なし**（雛形のビルドスクリプトを実行するだけ） |
-| 図の構成そのもの | 画像を作り直し、変換からやり直す | `slide-image-gen`（MCP） → `image-to-pptx` |
-
-書式と作業フォルダはそのまま使用でき、修正後は `pptx-lint` で再検査する。
-
-## 構成
-
-```
-pptx-as-code/
-├── plugin.json                 プラグインの定義（Copilot CLI と VS Code が読む）
-├── .claude-plugin/             Claude Code 用の定義と、導入元の一覧
-├── template/                   作業フォルダの雛形。描画用の関数、ビルド、規格の検査、既定の書式
-├── references/                 pptxgenjs の技法と、PowerPoint で開けなくなる条件
-├── devcontainer/               コンテナで使う場合の定義。利用者のプロジェクトにコピーする
-├── skills/
-│   ├── content-to-pptx/        内容から作成する手順
-│   ├── image-to-pptx/          変換手順と、座標把握・切り出し・比較のスクリプト
-│   ├── ms-format/              書式の定義、文章と構成のルール、アイコン、型の見本
-│   ├── pptx-lint/              検査の観点と、指摘の返し方
-│   └── env-setup/              環境の点検スクリプトと、OS 別の導入手順
-├── plugins/slide-image-gen/    画像生成 MCP。起動定義と本体（Python）。独立したプラグインとして追加する
-└── infra/                      画像生成 MCP が使う Microsoft Foundry と画像生成モデルを
-                                Azure にデプロイするスクリプトと Bicep
-```
-
-`template/` は特定のスキルに属さない**共通の資産**で、`content-to-pptx`、`image-to-pptx`、`pptx-lint` の 3 つが使用する。
-資料を作成するたびに作業フォルダへコピーし、コピー先で編集する。プラグインを更新しても、作成中の資料には影響しない。
-
-## セットアップ方法
-
-### 1. プラグインのインストール
-
-GitHub Copilot と Claude Code で使用できる。ツール本体の導入手順は [GitHub Copilot CLI のインストール](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli) と [Claude Code のセットアップ](https://code.claude.com/docs/en/setup) を参照。
-どちらか一方で使用する場合は、そのツールの手順を 1 回だけ実行する。両方で使用する場合は、両方の手順を実行する。
-インストールしたスキルは、すべてのプロジェクトで有効になる。
-
-#### GitHub Copilot で使用する場合
-
-インストールには GitHub Copilot CLI を使う。インストールしたプラグインは、GitHub Copilot CLI と VS Code の GitHub Copilot Chat で使用できる。
+GitHub Copilot で使用する場合。GitHub Copilot CLI で導入すると、VS Code の GitHub Copilot Chat でも使用できる。
 
 ```bash
 copilot plugin marketplace add akitamoto-dev/pptx-as-code
 copilot plugin install pptx-as-code@pptx-as-code
 ```
 
-#### Claude Code で使用する場合
+Claude Code で使用する場合。
 
 ```bash
 claude plugin marketplace add akitamoto-dev/pptx-as-code
 claude plugin install pptx-as-code@pptx-as-code
 ```
 
-更新は、GitHub Copilot CLI では `copilot plugin update pptx-as-code@pptx-as-code`、Claude Code では `claude plugin update pptx-as-code@pptx-as-code` を実行する。
+両方で使用する場合は、両方を実行する。導入したスキルはすべてのプロジェクトで有効になる。
 
-### 2. 環境のセットアップ（`env-setup` スキルが実行）
+### 2. 環境を構築する
 
 エージェントを起動する。
+
+GitHub Copilot で使用する場合。
 
 ```bash
 copilot
 ```
 
+Claude Code で使用する場合。
+
 ```bash
 claude
 ```
 
-起動したら、環境構築のスキルを実行する。
+環境構築のスキルを実行する。
 
 ```
 /pptx-as-code:env-setup
 ```
 
-`env-setup` が以下の 2.1〜2.3 を順に行う。手動でコマンドを実行する必要はない。導入の前に承諾を求め、導入できなかったものがあればその内容を報告する。動作しなくなったときも、同じスキルを実行する。
+必要なものの導入、見本のビルド、画像生成 MCP の設定までを実施する。**コマンドの手動実行や環境変数の設定は不要。** 導入の前に承諾を求め、導入できなかったものがあればその内容を報告する。
 
 対応 OS は Linux、WSL、macOS。Windows ネイティブは LibreOffice の導入で動作する見込みだが、実機での検証は未実施。
 
-#### 2.1 実行環境の導入
+**画像生成 MCP には Azure サブスクリプションが必要。** 図の自由度と仕上がりに影響するため、可能であれば設定する。使用できない環境でも、図形とアイコンで図を直接作成すれば資料は作成できる。
 
-技術スタックは次のとおり。すべて導入する。
+**課金について。** 作成する Foundry アカウントと GPT-Image-2 のデプロイ（Global Standard）は従量課金で、作成時点では費用が発生しない。生成した画像の枚数に応じて課金される。単価は [Microsoft Foundry の価格](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/)（モデルごとの単価と課金単位が分かる）を参照。使用しなくなった場合はリソースグループを削除する。
 
-| 区分 | 導入するもの | 用途 |
-|---|---|---|
-| PowerPoint の生成 | Node.js、pptxgenjs | スライドをコードで組み立て、PowerPoint ファイルを出力する。python-pptx ではなく JavaScript の pptxgenjs を採用している |
-| 規格の検査 | Python 3 | 生成したファイルを開き、PowerPoint が破損と判定する箇所を修正・検出する。標準ライブラリだけで動作する |
-| PDF と画像への変換 | LibreOffice、poppler（pdftoppm）または PyMuPDF、日本語フォント（Noto Sans CJK） | PowerPoint ファイルを PDF に変換し、各ページを PNG にする |
-| 画像から PowerPoint への変換 | uv、Pillow、PyMuPDF、python-pptx | 座標の読み取り、切り出し、レンダリング比較、編集可能性の検証。uv が実行時に依存を解決する |
-| アイコン | Fluent UI System Icons | Iconify から取得し、PNG として配置する。取得済みのものはプラグインに同梱している |
+### 3. 動作確認
 
-#### 2.2 見本のビルド
-
-見本のスライドをビルドし、PDF と画像が出力されることを確認する。
-
-#### 2.3 画像生成 MCP のセットアップ
-
-Microsoft Foundry に画像生成モデルをデプロイし、MCP を接続する。Azure サブスクリプションが必要。
-図の自由度と仕上がりに影響するため、可能であれば設定する。
-
-**課金について。** 作成する Foundry アカウントと GPT-Image-2 のデプロイ（Global Standard）は従量課金で、作った時点では費用が発生しない。生成した画像の枚数に応じて課金される。単価は [Microsoft Foundry の価格](https://azure.microsoft.com/pricing/details/cognitive-services/openai-service/)（モデルごとの単価と課金単位が分かる）を参照。使わなくなったらリソースグループを削除する。
-
-| 区分 | 内容 |
-|---|---|
-| 画像生成 | Microsoft Foundry の GPT-Image-2。16:9 の PNG を 1 枚ずつ生成する |
-| MCP サーバー | FastMCP（Python）で実装。openai と azure-identity で Foundry を呼び出す |
-| 耐障害性 | 複数リージョンに展開し、呼び出しごとに分散する。制限に達したリージョンは一定時間避けて別のリージョンで再試行する |
-| インフラ | 1 リージョン分の Bicep と、それをリージョンごとに実行するデプロイスクリプト（Python） |
-
-| 手順 | 内容 |
-|---|---|
-| 1 | デプロイスクリプトで Microsoft Foundry をデプロイする。GPT-Image-2 に対応するリージョンを 1 つずつ調べ、作成できないリージョンはスキップし、残りのリージョンで続行する |
-| 2 | 作成できたリージョンの接続先を、スクリプトが env ファイルに書き込む。MCP の設定ファイルには書かない |
-| 3 | 画像生成 MCP のプラグインをインストールする |
-
-| 使用するツール | 手順 3 のコマンド |
-|---|---|
-| GitHub Copilot | `copilot plugin install slide-image-gen@pptx-as-code` |
-| Claude Code | `claude plugin install slide-image-gen@pptx-as-code` |
-
-導入したら、**クライアントを再起動する**。MCP の定義は起動時にしか読まれない。VS Code の Copilot Chat では「Developer: Reload Window」を実行し、ツール選択で `slide-image-gen` の「更新ツール」を押す。
-
-手順の詳細と環境変数は [画像生成 MCP の説明](plugins/slide-image-gen/README.md) にある。
-
-Azure を使用できない環境ではこの手順を省く。画像生成を経由せず、図形とアイコンで図を直接作成する。
-
-## 動作確認
-
-セットアップが済んだら、1 ページの資料を作って確かめる。
+1 ページの資料を作成して確認する。
 
 内容から直接作成する方法。
 
@@ -184,24 +122,56 @@ Azure を使用できない環境ではこの手順を省く。画像生成を�
 /pptx-as-code:ms-format /pptx-as-code:content-to-pptx LLM とは を説明する 1 ページの資料を作成してください。
 ```
 
-画像を経由して作成する方法（画像生成 MCP の設定が要る）。
+画像を経由して作成する方法（画像生成 MCP の設定が必要）。
 
 ```
 /pptx-as-code:ms-format /pptx-as-code:image-to-pptx AIエージェント とは を説明する 1 ページの資料を作成してください。
 ```
 
-変換元の画像を渡していないので、`image-to-pptx` が `slide-image-gen` を呼んで 1 枚生成し、それを変換する。MCP はスラッシュコマンドではないため、質問文には書かない。
+出力された pptx を PowerPoint で開き、崩れがなければ完了。
 
-どちらも仕上げに `pptx-lint` が全ページを検査する。出力された pptx を PowerPoint で開いて崩れが無ければ完了。
+**MCP のツールはスラッシュコマンドの候補に表示されない。** ツールはエージェントが呼び出すもので、利用者が `/` から起動する対象ではないため。質問文にも記載せず、`image-to-pptx` を呼び出せばその中で使用される。
+画像生成のみを直接呼び出す場合は、チャットで「slide-image-gen で画像を作成」と指示する。Claude Code ではスラッシュコマンド `/mcp__slide-image-gen__generate` も使用できる。
+MCP の認識状況は、セッション内で `/mcp` を実行すると確認できる（Claude Code では起動前に `claude mcp list` でも確認できる）。
 
-## プラグイン自体の改修
+## 更新
 
-書式のルールや描画関数を修正する場合は、プラグインとしてインストールせず、clone したディレクトリを直接読み込ませる。
+開発側の修正を、**カタログ（marketplace）とプラグインの順に**取り込む。カタログは提供中のバージョンの索引で、プラグイン本体とは別に管理されるため、先に更新する。
+
+GitHub Copilot。
 
 ```bash
-git clone https://github.com/akitamoto-dev/pptx-as-code.git ~/pptx-as-code
+copilot plugin marketplace update pptx-as-code
+copilot plugin update --all
 ```
 
-GitHub Copilot CLI と Claude Code のどちらも、起動時に `--plugin-dir ~/pptx-as-code` を付けて読み込ませる。
-インストール済みのプラグインと同時に有効にすると二重に読み込まれるため、どちらか一方にする。
-更新は `git pull`、改善は Pull Request で行う。
+Claude Code。プラグインごとに指定する。
+
+```bash
+claude plugin marketplace update pptx-as-code
+claude plugin update pptx-as-code@pptx-as-code
+```
+
+**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。
+VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行し、画像生成 MCP を更新した場合はツール選択で `slide-image-gen` の「更新ツール」を押す。
+
+導入先のファイルは一式が差し替わるため、スキル・書式・見本・画像生成 MCP の本体は、この手順で反映される。
+**作成済みの作業フォルダは更新されない。** 雛形（`template/`）を複製したもので、作成中の資料がプラグインの更新で破損しないよう、独立して扱う設計による。雛形の修正を既存の作業フォルダへ反映する場合は、複製し直す。
+
+### `env-setup` の再実行
+
+**通常は不要。** スキルの手順や書式の変更は、上記の更新と再起動で反映される。次の場合のみ実行する。
+
+- 必要な道具が増えた、または変更された場合（更新の案内に記載される）
+- 画像生成 MCP の接続先を変更する場合（リージョンの追加、別のサブスクリプションへの移行）
+- 動作しなくなった場合
+
+**何度実行しても安全。** 点検のうえ不足分のみを導入し、Foundry も既存のリソースは再作成しない。
+
+## 参考
+
+| 参照先 | 内容 |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | 構成、技術スタック、ディレクトリ |
+| [mcp-server/README.md](mcp-server/README.md) | 画像生成 MCP の設定と運用 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | プラグイン自体の改修 |

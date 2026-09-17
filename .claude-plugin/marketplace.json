@@ -4,18 +4,13 @@
     "name": "akitamoto"
   },
   "metadata": {
-    "description": "スライド作成のスキル集と、画像生成 MCP の起動定義"
+    "description": "PowerPoint 資料をコードから作るスキル集と、スライドの画像を生成する MCP"
   },
   "plugins": [
     {
       "name": "pptx-as-code",
       "source": "./",
-      "description": "スキル集（content-to-pptx / ms-format / image-to-pptx / pptx-lint / env-setup）。スライド作成にはこれだけでよい"
-    },
-    {
-      "name": "slide-image-gen",
-      "source": "./plugins/slide-image-gen",
-      "description": "画像生成 MCP の起動定義（Microsoft Foundry が必要）"
+      "description": "PowerPoint 資料をコードから作るスキルと、スライドの画像を生成する MCP。画像生成は Azure サブスクリプションが要るが、無くてもスキルは動く"
     }
   ]
 }

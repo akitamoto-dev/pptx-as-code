@@ -1,9 +1,0 @@
-{
-  "name": "slide-image-gen",
-  "version": "0.1.0",
-  "description": "画像生成 MCP（slide-image-gen）の起動定義。Microsoft Foundry の画像生成モデルで画像形式のスライドを作る（Azure サブスクリプションが必要）",
-  "author": {
-    "name": "akitamoto"
-  },
-  "mcpServers": "./mcp.json"
-}

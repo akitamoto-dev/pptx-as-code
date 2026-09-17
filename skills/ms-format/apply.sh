@@ -19,6 +19,6 @@ cp "$HERE/icons/icons.json" "$HERE/icons/"*.png "$WORK/assets/icons/"
 echo "書式を適用しました: $WORK/deck-src/theme.json（青基調）"
 echo "アイコンを配置しました: $WORK/assets/icons/（$(ls "$HERE/icons/"*.png | wc -l) 個）"
 echo
-echo "見本 9 枚から始める場合は次を実行してください。"
+echo "見本から始める場合は次を実行してください。"
 echo "  cp $HERE/samples/sample.js $WORK/deck-src/"
 echo "  そのうえで $WORK/deck.json の parts を [\"sample\"] にしてください。"

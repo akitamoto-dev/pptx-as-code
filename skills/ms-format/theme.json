@@ -27,8 +27,8 @@
   "title": { "x": 0.55, "y": 0.34, "w": 12.2, "h": 0.7, "fontSize": 28, "minFontSize": 24, "lineSpacingMultiple": 1.15 },
   "keyMessage": { "x": 0.55, "y": 1.12, "w": 12.23, "h": 0.72, "fontSize": 16, "lineSpacingMultiple": 1.28 },
   "section": { "y": 2.0, "h": 0.38, "fontSize": 16 },
-  "body": { "fontSize": 11.5, "minFontSize": 9.5, "lineSpacingMultiple": 1.3 },
-  "bullets": { "fontSize": 10.5, "lineSpacingMultiple": 1.22, "paraSpaceAfter": 4 },
+  "body": { "fontSize": 11.5, "minFontSize": 11, "lineSpacingMultiple": 1.3 },
+  "bullets": { "fontSize": 11.5, "lineSpacingMultiple": 1.22, "paraSpaceAfter": 4 },
   "caption": { "fontSize": 11, "lineSpacingMultiple": 1.25 },
   "label": { "fontSize": 12, "lineSpacingMultiple": 1.15 },
   "table": { "fontSize": 11.5, "minFontSize": 10.5, "headerFontSize": 12, "borderWidth": 1, "cellMargin": [2, 6, 2, 6] },
@@ -38,7 +38,7 @@
   "divider": { "barHeight": 0.11, "labelFontSize": 14, "titleFontSize": 30, "subtitleFontSize": 13, "labelColor": "9CC7E8", "subtitleColor": "C8DDF0" },
   "subDivider": { "labelFontSize": 14, "titleFontSize": 26, "subtitleFontSize": 13 },
   "toc": { "fontSize": 16, "rowHeight": 0.6 },
-  "text": { "halfWidthEm": 0.48 },
+  "text": { "halfWidthEm": 0.6 },
   "writing": {
     "sectionBrackets": ["＜", "＞"],
     "keyMessage": "主語と述語のある完全な文をですます調で書く。1 文なら句点なし、2 文なら 1 文目だけ句点",
@@ -49,6 +49,6 @@
     "palette": "青の濃淡とグレーだけで構成する",
     "accent": "危険・攻撃・被害を示す要素だけ赤",
     "style": "フラットで企業向けのテック図版。写実的な絵やアイソメトリック画にしない",
-    "text": "タイトル・説明文・ラベルなどの文字を一切入れない"
+    "text": "タイトル・見出し・図中のラベルは短い日本語で入れる。本文の長文と出典は入れず、下部にまとめ帯を置かない"
   }
 }

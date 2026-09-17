@@ -1,6 +1,6 @@
 ---
 name: env-setup
-description: "スライド作成（content-to-pptx / image-to-pptx / pptx-lint）に必要な環境を点検し、不足しているものを OS に合わせて導入する。画像生成 MCP を使う場合は Foundry のデプロイと接続設定も扱う。「環境構築」「セットアップ」「スライド作成の準備」「MCP の設定」「動かない」でトリガー。"
+description: "スライド作成の環境を構築する。Node.js・Python・LibreOffice・日本語フォントなど必要なものを点検し、不足しているものを OS に合わせて導入する。画像生成 MCP を使う場合は Foundry のデプロイと接続設定まで行う。「環境構築」「セットアップ」「スライド作成の準備」「MCP の設定」「動かない」でトリガー。"
 user-invocable: true
 ---
 
@@ -50,7 +50,7 @@ uv（Linux / WSL）は `curl -LsSf https://astral.sh/uv/install.sh | sh`。導�
 **uv は、既定の PATH から引ける場所にも置く。** 画像生成 MCP を起動するのは、利用者のシェルではなくクライアント本体（Copilot CLI、VS Code に同梱の Copilot CLI、Claude Code）で、これらは**ログインシェルの PATH を引き継がない**。`~/.local/bin` に入れただけでは「見つからない」で起動に失敗し、しかも子プロセスが始まる前に落ちるため**エラーが出力に残らない**。次で確かめる。
 
 ```bash
-env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c 'command -v uvx'
+env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c 'command -v uv'
 ```
 
 何も出なければ届いていない。対処は OS ごとに次のとおり。
@@ -186,7 +186,7 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
 
 **`az login` は利用者に実行してもらう。** ブラウザーでの承認が要るため、エージェントからは完了できない。コンテナや SSH など、ブラウザーの折り返しを受け取れない環境では `az login --use-device-code` を使い、表示されたコードと URL を伝えて承認を待つ。
 
-デプロイ手順と環境変数の詳細は、プラグインの `plugins/slide-image-gen/README.md` にある。要点は次の 3 つ。
+デプロイ手順と環境変数の詳細は、プラグインの `mcp-server/README.md` にある。要点は次の 3 つ。
 
 1. **Foundry をデプロイする**。プラグインに同梱している `infra/deploy.py` を使う（プラグインの導入先にあるので、clone は要らない）。まず `python3 infra/deploy.py --check` を実行し、作成するリソース、リージョンごとの判定、書き込む env ファイルを見せてから、`python3 infra/deploy.py` を実行する。対応リージョンを 1 つずつ調べ、モデルが提供されていない、クォータに空きがない、名前が使用済み、デプロイに失敗したリージョンはスキップして続行する
 
@@ -200,17 +200,18 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
 
    使えるリージョンが 1 つも無い場合（終了コード 1）は、表示された理由（クォータ、Azure Policy、権限など）を伝え、起動定義の登録には進まない。ロールを付与する権限が無い場合は、表示された付与コマンドを管理者に依頼するよう伝える
 
-3. **起動定義を登録する**。接続先を設定ファイルに書かないので、起動定義は誰でも同じ 1 行になる
+3. **起動定義はプラグインに入っている**。`mcp.json` がプラグインのルートにあるため、プラグインを導入していれば追加の登録は要らない。接続先を設定ファイルに書かないので、起動定義は誰でも同じ 1 行になる
 
-   | 方法 | コマンド |
+   プラグインを使わずに読ませている場合（clone して `--plugin-dir` を付けている場合など）だけ、手で登録する。
+
+   | ツール | コマンド |
    |---|---|
-   | プラグイン（推奨） | `copilot plugin install slide-image-gen@pptx-as-code` / `claude plugin install slide-image-gen@pptx-as-code` |
-   | 直接登録 | `claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
-   | 直接登録（Copilot CLI） | `copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.1#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
+   | Claude Code | `claude mcp add -s user slide-image-gen -- uv run --directory <clone 先>/mcp-server slide-image-gen-mcp` |
+   | GitHub Copilot CLI | `copilot mcp add slide-image-gen -- uv run --directory <clone 先>/mcp-server slide-image-gen-mcp` |
 
-   登録の前に、**クライアントから `uvx` が引けるかを §2 の `env -i PATH=...` で確かめる**。自分のシェルで `command -v uvx` が通っても、MCP を起動するのはクライアント本体なので当てにならない。引けない場合は §2 のとおり PATH の側を直す。
+   どちらの場合も、**クライアントから `uv` が引けるかを §2 の `env -i PATH=...` で確かめる**。自分のシェルで `command -v uv` が通っても、MCP を起動するのはクライアント本体なので当てにならない。引けない場合は §2 のとおり PATH の側を直す。
 
-   プラグイン経由なら設定ファイルへの追記は要らない。プロジェクトの `.mcp.json` や `.vscode/mcp.json` には勝手に書かない（書くなら内容を見せて承諾を得てから、起動定義だけを書く）。
+   プロジェクトの `.mcp.json` や `.vscode/mcp.json` には勝手に書かない（書くなら内容を見せて承諾を得てから、起動定義だけを書く）。
 
 **最後にクライアントを再起動する。** MCP の定義は起動時にしか読まれないため、再起動しないと `generate_slide_image` は現れない。ここは避けられないので、利用者に手順として伝える。
 
@@ -219,7 +220,7 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
 | GitHub Copilot CLI / Claude Code | 一度終了して起動し直す |
 | VS Code の Copilot Chat | コマンドパレットで **Developer: Reload Window**。そのあとツール選択で `slide-image-gen` の**更新ツール**を押し、現れた `generate_slide_image` にチェックを入れる |
 
-初回は uvx がパッケージ（約 80 個）を取得するため、数十秒かかる。
+初回は `uv` が依存（約 80 個）を取得するため、数十秒かかる。2 回目以降はキャッシュから起動する。
 
 ## 前提バージョン
 
