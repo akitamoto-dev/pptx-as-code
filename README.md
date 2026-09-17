@@ -168,6 +168,8 @@ Microsoft Foundry に画像生成モデルをデプロイし、MCP を接続す�
 | GitHub Copilot | `copilot plugin install slide-image-gen@pptx-as-code` |
 | Claude Code | `claude plugin install slide-image-gen@pptx-as-code` |
 
+導入したら、**クライアントを再起動する**。MCP の定義は起動時にしか読まれない。VS Code の Copilot Chat では「Developer: Reload Window」を実行し、ツール選択で `slide-image-gen` の「更新ツール」を押す。
+
 手順の詳細と環境変数は [画像生成 MCP の説明](plugins/slide-image-gen/README.md) にある。
 
 Azure を使用できない環境ではこの手順を省く。画像生成を経由せず、図形とアイコンで図を直接作成する。
