@@ -22,7 +22,7 @@ GitHub Copilot CLI と Claude Code のどちらも、起動時に `--plugin-dir 
 
 ```bash
 cp -r template/. /tmp/check/
-bash skills/blue-format/apply.sh /tmp/check
+node skills/blue-format/apply.js /tmp/check
 cp skills/blue-format/samples/sample.js /tmp/check/deck-src/
 cd /tmp/check && npm install && node build.js --name sample
 ```

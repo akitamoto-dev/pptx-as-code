@@ -72,7 +72,7 @@
 
 | 何を | どこ | 効き方 |
 |---|---|---|
-| 色・文字サイズ・座標の値 | `template/deck-src/theme.json` | `blue-format` の `apply.sh` が差し替える |
+| 色・文字サイズ・座標の値 | `template/deck-src/theme.json` | `blue-format` の `apply.js` が差し替える |
 | 描画 | `template/deck-src/lib.js` のヘルパー | 定義側は座標を書かず、ヘルパー経由でのみ描く |
 | 文章と構成 | `writing-rules.md` | 作成スキルが判断に迷ったときの正本 |
 | 出来上がり | `pptx-lint` | 階層・構成・色の違反をページ番号付きで返す |

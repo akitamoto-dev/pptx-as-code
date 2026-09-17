@@ -26,14 +26,14 @@ user-invocable: true
 ## 1. 点検する
 
 ```bash
-bash <このスキル>/scripts/doctor.sh <作業ディレクトリ>
+node <このスキル>/scripts/doctor.js <作業ディレクトリ>
 ```
 
 読み取り専用で、何も導入・変更しない。「なし」の行を利用者に見せ、これから導入するものを確認する。
 
 **このとき、見出しに出る環境も一緒に伝える**（`=== pptx-as-code 環境点検: Linux (コンテナ) ===` など）。利用者は、エージェントがどこで動いているかを知らない。以降のやり取りで「どこで作業すればよいか」が食い違う元になる。
 
-Windows ネイティブには点検スクリプトを用意していない。`node --version`、`python --version`、`where soffice` を個別に確認する。
+**`bash` で実行しない。OS を問わず `node` で実行する。** Windows では PATH の `bash.exe` が WSL を起動するため、点検結果が Windows ではなく WSL のものになる。エラーにならないので取り違えに気づけない。
 
 ## 2. 導入する
 
@@ -83,7 +83,9 @@ Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sud
 - WSL で Windows 側の Yu Gothic を使う: `mkdir -p ~/.local/share/fonts && ln -sf /mnt/c/Windows/Fonts/YuGoth*.ttc ~/.local/share/fonts/ && fc-cache -f`
 - 日本語フォントが用意できない場合、PDF は代替フォントで描画される（PowerPoint では正しく出る）
 - pip が「externally-managed-environment」で拒否される環境では、uv を入れて `uv run` に任せる
-- Windows ネイティブは LibreOffice を入れれば動く見込み。実機検証はこれからなので、WSL が使えるならそちらを勧める
+- Windows の LibreOffice は PATH に入らないが、`build.js` と `doctor.js` が既定の導入先を探すので、PATH を通す必要はない
+- Windows の `python3` は Microsoft Store を開くだけのスタブであることがある。`doctor.js` は `--version` の出力で実体を確かめるので誤検出しないが、手で確かめるときは注意する
+- Windows ネイティブでの実機検証は未実施。不具合が出たら WSL に切り替える判断もできるよう、どこで詰まったかを利用者に伝える
 
 ## 3. 取得先が塞がれているとき
 
@@ -95,9 +97,9 @@ Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sud
 
 **自分で `npm config get registry` や `pip config list` を実行しても答えは出ない。** 塞がれている側（コンテナなど）には組織の設定が入っていないので、必ず既定値が返る。**その結果を「組織の取得先は無い」の根拠にしてはいけない。** 設定があるのは、そのネットワーク経路を管理している側（多くは Windows）で、そこは利用者にしか見られない。
 
-調べ先は、自分がどこで動いているかで決まる。`doctor.sh` の見出しがそれを示す。
+調べ先は、自分がどこで動いているかで決まる。`doctor.js` の見出しがそれを示す。
 
-| `doctor.sh` の見出し | 調べ先 |
+| `doctor.js` の見出し | 調べ先 |
 |---|---|
 | `(コンテナ / ホストは Windows)` | **Windows**。コンテナは Docker Desktop 経由でそこを通る |
 | `(コンテナ / ホストの OS は不明)` | Docker を動かしている端末。どの OS かを利用者に確かめてから、その OS 向けのコマンドを示す |

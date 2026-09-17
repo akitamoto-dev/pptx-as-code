@@ -110,7 +110,7 @@ pptx を伴わず画像だけが必要な場合は、チャットで「slide-ima
 
 | 項目 | 内容 |
 |---|---|
-| 対応 OS | Linux、WSL、macOS。Windows ネイティブは LibreOffice の導入で動作する見込みだが、実機での検証は未実施 |
+| 対応 OS | Linux、WSL、macOS、Windows。ただし Windows での実機検証は未実施 |
 | Azure サブスクリプション | 画像を経由して作成する場合に必要。Microsoft Foundry の GPT-Image-2 を使用し、生成した画像の枚数に応じて課金される |
 
 ### 1. エージェントを導入する
@@ -120,6 +120,12 @@ pptx を伴わず画像だけが必要な場合は、チャットで「slide-ima
 
 - [GitHub Copilot CLI のインストール](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
 - [Claude Code のセットアップ](https://code.claude.com/docs/en/setup)
+
+**Windows では先に PowerShell 7 を導入する。** GitHub Copilot CLI が要求するバージョンで、標準搭載の Windows PowerShell 5.1 とは別物。
+
+```bash
+winget install Microsoft.PowerShell
+```
 
 ### 2. プラグインを導入する
 

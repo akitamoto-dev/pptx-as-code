@@ -15,7 +15,7 @@ description: "スライドの書式を与える。青基調の所定フォーマ
 共通の雛形（プラグイン直下の `template/`）を作業ディレクトリへコピーしたあと、次を実行する。
 
 ```bash
-bash <このスキル>/apply.sh <作業ディレクトリ>
+node <このスキル>/apply.js <作業ディレクトリ>
 ```
 
 `deck-src/theme.json` が青基調に差し替わり、`assets/icons/` に Fluent アイコンが入る。
