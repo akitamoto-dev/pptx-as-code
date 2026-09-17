@@ -63,6 +63,8 @@ env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c '
 
 **クライアントの設定ファイル（`mcp.json` など）を絶対パスに書き換えて回避しない。** プラグインを更新すると消え、パスは OS と利用者ごとに違うので配布もできない。直すのは PATH の側。
 
+**uv を入れたら、クライアントを再起動してもらう。** 起動中のプロセスは PATH を取り込んだ時点の値を持ち続けるため、あとから入れたものが見えない。VS Code は **Reload Window では足りない**。エージェントを動かしているプロセス（agentHost）が残るので、統合ターミナルで `pkill -f "[-]-type=agentHost"` を実行してから Reload Window する。コンテナを作り直せる場合は、その方が確実。
+
 Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash`、macOS が `brew install azure-cli`、Windows が `winget install Microsoft.AzureCLI`。画像生成 MCP でしか使わないが、使う段になって止まらないよう、ここで一緒に入れる。
 
 **`npm install` や `uv run` が TLS の失敗（handshake failure）や 403 で止まったら §3 へ。**

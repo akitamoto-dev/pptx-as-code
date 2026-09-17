@@ -13,6 +13,8 @@
 GitHub Copilot CLI と Claude Code の両方が入るので、使う方だけサインインすればよい。
 Claude Code は npm を経由しない配布形式で `~/.local/bin` に入るため、コンテナの中から `claude update` で更新できる。
 
+uv もコンテナの作成時に入れている。画像生成 MCP を起動するのはクライアント本体で、利用者のシェルの PATH を引き継がないため、あとから入れると見つけられない。先に入れて `/usr/local/bin` から引けるようにしてある。
+
 ## 前提
 
 - Docker の実行環境。WSL から使う場合は、Docker Desktop の Settings > Resources > WSL Integration で、そのディストリビューションを有効にする

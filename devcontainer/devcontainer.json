@@ -4,6 +4,6 @@
   "features": {
     "ghcr.io/devcontainers/features/copilot-cli:1": {}
   },
-  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash; copilot plugin marketplace add akitamoto-dev/pptx-as-code; copilot plugin install pptx-as-code@pptx-as-code; $HOME/.local/bin/claude plugin marketplace add akitamoto-dev/pptx-as-code; $HOME/.local/bin/claude plugin install pptx-as-code@pptx-as-code",
+  "postCreateCommand": "curl -fsSL https://claude.ai/install.sh | bash; curl -LsSf https://astral.sh/uv/install.sh | sh; sudo ln -sf $HOME/.local/bin/uv /usr/local/bin/uv; sudo ln -sf $HOME/.local/bin/uvx /usr/local/bin/uvx; copilot plugin marketplace add akitamoto-dev/pptx-as-code; copilot plugin install pptx-as-code@pptx-as-code; $HOME/.local/bin/claude plugin marketplace add akitamoto-dev/pptx-as-code; $HOME/.local/bin/claude plugin install pptx-as-code@pptx-as-code",
   "remoteUser": "vscode"
 }
