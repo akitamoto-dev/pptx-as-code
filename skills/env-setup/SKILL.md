@@ -47,6 +47,22 @@ Windows ネイティブには点検スクリプトを用意していない。`no
 
 uv（Linux / WSL）は `curl -LsSf https://astral.sh/uv/install.sh | sh`。導入後はシェルを開き直すか `~/.local/bin` を PATH に足す。
 
+**uv は、既定の PATH から引ける場所にも置く。** 画像生成 MCP を起動するのは、利用者のシェルではなくクライアント本体（Copilot CLI、VS Code に同梱の Copilot CLI、Claude Code）で、これらは**ログインシェルの PATH を引き継がない**。`~/.local/bin` に入れただけでは「見つからない」で起動に失敗し、しかも子プロセスが始まる前に落ちるため**エラーが出力に残らない**。次で確かめる。
+
+```bash
+env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c 'command -v uvx'
+```
+
+何も出なければ届いていない。対処は OS ごとに次のとおり。
+
+| OS | 対処 |
+|---|---|
+| Linux / WSL / コンテナ | `sudo ln -sf ~/.local/bin/uv /usr/local/bin/uv && sudo ln -sf ~/.local/bin/uvx /usr/local/bin/uvx`（`/usr/local/bin` はどのクライアントの PATH にも入っている） |
+| macOS | Homebrew の bin（`/opt/homebrew/bin` など）が上の PATH に無ければ、同様にリンクする |
+| Windows | winget で入れると利用者の PATH に追加されるが、**既に起動しているプロセスには届かない**。VS Code とターミナルを再起動する |
+
+**クライアントの設定ファイル（`mcp.json` など）を絶対パスに書き換えて回避しない。** プラグインを更新すると消え、パスは OS と利用者ごとに違うので配布もできない。直すのは PATH の側。
+
 Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash`、macOS が `brew install azure-cli`、Windows が `winget install Microsoft.AzureCLI`。画像生成 MCP でしか使わないが、使う段になって止まらないよう、ここで一緒に入れる。
 
 **`npm install` や `uv run` が TLS の失敗（handshake failure）や 403 で止まったら §3 へ。**
@@ -190,7 +206,7 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
    | 直接登録 | `claude mcp add -s user slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
    | 直接登録（Copilot CLI） | `copilot mcp add slide-image-gen -- uvx --from "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen" slide-image-gen-mcp` |
 
-   登録の前に `command -v uvx` で実体を確かめる。`~/.local/bin` に入れた直後などで PATH に無い場合、エージェントが起動する MCP には PATH が引き継がれず、「No such file or directory」で接続に失敗する。そのときは絶対パス（`~/.local/bin/uvx`）で登録する。
+   登録の前に、**クライアントから `uvx` が引けるかを §2 の `env -i PATH=...` で確かめる**。自分のシェルで `command -v uvx` が通っても、MCP を起動するのはクライアント本体なので当てにならない。引けない場合は §2 のとおり PATH の側を直す。
 
    プラグイン経由なら設定ファイルへの追記は要らない。プロジェクトの `.mcp.json` や `.vscode/mcp.json` には勝手に書かない（書くなら内容を見せて承諾を得てから、起動定義だけを書く）。
 
