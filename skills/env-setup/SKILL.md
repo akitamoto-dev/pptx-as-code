@@ -87,7 +87,6 @@ Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sud
 - pip が「externally-managed-environment」で拒否される環境では、uv を入れて `uv run` に任せる
 - Windows の LibreOffice は PATH に入らないが、`build.js` と `doctor.js` が既定の導入先を探すので、PATH を通す必要はない
 - Windows の `python3` は Microsoft Store を開くだけのスタブであることがある。`doctor.js` は `--version` の出力で実体を確かめるので誤検出しないが、手で確かめるときは注意する
-- Windows ネイティブでの実機検証は未実施。不具合が出たら WSL に切り替える判断もできるよう、どこで詰まったかを利用者に伝える
 
 ## 3. 取得先が塞がれているとき
 
@@ -209,7 +208,7 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
 
 3. **起動定義はプラグインに入っている**。`mcp.json` をプラグインの定義（`plugin.json` と `.claude-plugin/plugin.json`）が参照しているため、プラグインを導入していれば追加の登録は要らない。接続先を設定ファイルに書かないので、起動定義は誰でも同じ 1 行になる
 
-   プラグインを使わずに読ませている場合（clone して `--plugin-dir` を付けている場合など）だけ、手で登録する。
+   プラグインとして読み込んでいない場合（clone したリポジトリの `skills/` だけを別の場所にコピーして使う場合など）だけ、手で登録する。ローカルのマーケットプレイスや Claude Code の `--plugin-dir` で読み込んだ場合はプラグインの MCP として起動するため、手で登録すると同じ MCP が 2 つになる。
 
    | ツール | コマンド |
    |---|---|

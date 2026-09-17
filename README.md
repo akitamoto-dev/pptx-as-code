@@ -11,7 +11,7 @@
 | Skill | `content-to-pptx` | 内容からスライドをコードで直接組み立てる | 表・箇条書き・文章が中心の資料 |
 | Skill | `image-to-pptx` | スライドを画像で設計し、編集できる pptx へ再構成する | 図が中心の資料、レイアウトの自由度が必要な場合 |
 | Skill | `blue-format` | 青基調の所定フォーマットと、文章・構成の規範を与える | **その書式で作成する場合のみ。** 別の書式やブランドでは使用しない |
-| Skill | `pptx-lint` | 出力を 1 ページずつ検査し、崩れと規範違反をページ番号付きで返す | 作成の完了時と、構成を変更した場合 |
+| Skill | `pptx-lint` | 出力を 1 ページずつ検査し、崩れと規範違反をページ番号付きで返す | 時間をかけて完成度を高める場合。指定したときだけ使用する |
 | Skill | `env-setup` | 実行に必要なものを点検して導入する | 初回と、動作しなくなった場合 |
 | MCP | `slide-image-gen` | スライドの案を画像で生成する | `image-to-pptx` が呼び出す。単独でも使用できる |
 
@@ -30,13 +30,14 @@ flowchart LR
     IN(["内容"])
     BF["blue-format（Skill）<br/>書式と文章の規範<br/>併用する場合のみ"]
     C2P["content-to-pptx（Skill）"]
-    LINT["pptx-lint（Skill）<br/>作成したページを検査"]
+    LINT["pptx-lint（Skill）<br/>全ページを検査"]
     OUT(["pptx + PDF"])
 
     IN --> C2P
-    C2P --> LINT
-    LINT --> OUT
+    C2P --> OUT
     BF -.-> C2P
+    C2P -.->|指定した場合のみ| LINT
+    LINT -.->|指摘| C2P
     OUT -.->|修正| C2P
     style C2P fill:#0078D4,stroke:#005A9E,color:#ffffff
 ```
@@ -51,18 +52,19 @@ flowchart LR
     IMG(["画像<br/>参考・変換対象"])
     BF["blue-format（Skill）<br/>書式と文章の規範<br/>併用する場合のみ"]
     I2P["image-to-pptx（Skill）"]
-    LINT["pptx-lint（Skill）<br/>作成したページを検査"]
+    LINT["pptx-lint（Skill）<br/>全ページを検査"]
     OUT(["pptx + PDF"])
     GEN[["slide-image-gen（MCP）<br/>GPT-Image-2 で<br/>スライドの案を生成"]]
 
     IN --> I2P
     IMG --> I2P
-    I2P --> LINT
-    LINT --> OUT
+    I2P --> OUT
     I2P -->|生成を依頼| GEN
     GEN -->|画像| I2P
     BF -.-> I2P
     BF -.-> GEN
+    I2P -.->|指定した場合のみ| LINT
+    LINT -.->|指摘| I2P
     OUT -.->|修正| I2P
     style I2P fill:#0078D4,stroke:#005A9E,color:#ffffff
 ```
@@ -81,15 +83,17 @@ pptx を伴わず画像だけが必要な場合は、チャットで「slide-ima
 
 ### ＜補足：作成後の修正＞
 
-図の破線で示した戻りが、**修正の規模に応じてどこまで遡るか。** 文言を直すたびに画像を生成し直したり、全ページを検査したりはしない。
+図の破線で示した戻りが、**修正の規模に応じてどこまで遡るか。** 文言を直すたびに画像を生成し直したりはしない。
 
-| 修正の内容 | 画像生成（方法 2） | `pptx-lint` |
-|---|---|---|
-| 文言、数値、色、強調、要素の位置、表や本文の追記 | 不要 | 不要（該当ページのみ確認） |
-| スライドの追加・削除・並べ替え、見出し構成の変更 | 不要 | 実行 |
-| 図のメタファーや構図そのものの変更 | 実行 | 実行 |
+| 修正の内容 | 画像生成（方法 2） |
+|---|---|
+| 文言、数値、色、強調、要素の位置、表や本文の追記 | 不要 |
+| スライドの追加・削除・並べ替え、見出し構成の変更 | 不要 |
+| 図のメタファーや構図そのものの変更 | 実行 |
 
 判断に迷う場合は、定義ファイルの修正から着手する。図の説得力が不足する場合にのみ画像生成へ戻す。
+
+`pptx-lint` による全ページの検査は、修正の規模にかかわらず、指定した場合だけ実行する。全ページの画像を読んで規範と照合するため、時間とコストがかかる。
 
 ### ＜補足：書式と規範＞
 
@@ -110,7 +114,8 @@ pptx を伴わず画像だけが必要な場合は、チャットで「slide-ima
 
 | 項目 | 内容 |
 |---|---|
-| 対応 OS | Linux、WSL、macOS、Windows。ただし Windows での実機検証は未実施 |
+| 使用環境 | VS Code での使用を想定する。エージェントは GitHub Copilot（VS Code の GitHub Copilot Chat、GitHub Copilot CLI）または Claude Code。手元の PC やコンテナでコマンドを実行してファイルを出力するため、コマンドを実行できないエージェント（Microsoft 365 Copilot など）は対象外 |
+| 対応 OS | Linux、WSL、macOS、Windows |
 | Azure サブスクリプション | 画像を経由して作成する場合に必要。Microsoft Foundry の GPT-Image-2 を使用し、生成した画像の枚数に応じて課金される |
 
 ### 1. エージェントを導入する
@@ -181,7 +186,7 @@ MCP の認識状況は、セッション内で `/mcp` を実行すると確認�
 
 カタログ（marketplace）とプラグインの順に取り込む。カタログは提供中のバージョンの索引で、プラグイン本体とは別に管理される。
 
-GitHub Copilot。
+GitHub Copilot。Windows では、VS Code と GitHub Copilot CLI を終了してから実行する。起動中の画像生成 MCP が導入先のファイルを使用しているため、そのままでは更新に失敗する。
 
 ```bash
 copilot plugin marketplace update pptx-as-code
@@ -195,7 +200,7 @@ claude plugin marketplace update pptx-as-code
 claude plugin update pptx-as-code@pptx-as-code
 ```
 
-**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行し、画像生成 MCP を更新した場合はツール選択で `slide-image-gen` の「更新ツール」を押す。
+**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行する（Windows では終了してから更新しているため、VS Code を起動し直す）。画像生成 MCP を更新した場合は、ツール選択で `slide-image-gen` の「更新ツール」を押す。
 
 導入先のファイルは一式が差し替わる。作成済みの作業フォルダは、雛形を複製したものとして独立して扱うため更新されない。
 `env-setup` の再実行は通常不要で、必要な道具が増えた場合や、動作しなくなった場合に実行する。

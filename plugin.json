@@ -1,7 +1,7 @@
 {
   "name": "pptx-as-code",
-  "version": "0.1.7",
-  "description": "PowerPoint 資料をコードから作る。内容から直接作る content-to-pptx、画像を経由する image-to-pptx、書式を与える blue-format、出来上がりを検査する pptx-lint、環境を構築する env-setup。書式と文章の規範は blue-format にまとめてあり、外せば別のブランドでも作れる",
+  "version": "0.1.8",
+  "description": "PowerPoint 資料をコードから作る。内容から直接作る content-to-pptx、画像を経由する image-to-pptx、書式を与える blue-format、指定したときに出来上がりを検査する pptx-lint、環境を構築する env-setup。書式と文章の規範は blue-format にまとめてあり、外せば別のブランドでも作れる",
   "author": {
     "name": "akitamoto"
   },
