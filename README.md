@@ -160,13 +160,15 @@ claude plugin install pptx-as-code@pptx-as-code
 内容から直接作成する方法。
 
 ```
-/pptx-as-code:blue-format /pptx-as-code:content-to-pptx LLM とは を説明する 1 ページの資料を作成してください。
+LLM とは何かを説明する 1 ページの資料を作成してください。
+/pptx-as-code:blue-format /pptx-as-code:content-to-pptx を使用してください。
 ```
 
 画像を経由して作成する方法（画像生成 MCP の設定が必要）。
 
 ```
-/pptx-as-code:blue-format /pptx-as-code:image-to-pptx AIエージェント とは を説明する 1 ページの資料を作成してください。
+AIエージェント とは何かを説明する 1 ページの資料を作成してください。
+/pptx-as-code:blue-format /pptx-as-code:image-to-pptx を使用してください。
 ```
 
 出力された pptx を PowerPoint で開き、崩れがなければ完了。
@@ -197,6 +199,20 @@ claude plugin update pptx-as-code@pptx-as-code
 
 導入先のファイルは一式が差し替わる。作成済みの作業フォルダは、雛形を複製したものとして独立して扱うため更新されない。
 `env-setup` の再実行は通常不要で、必要な道具が増えた場合や、動作しなくなった場合に実行する。
+
+導入済みのバージョンは次で確認する。`pptx-as-code@pptx-as-code` の行に表示される。
+
+GitHub Copilot。
+
+```bash
+copilot plugin list
+```
+
+Claude Code。
+
+```bash
+claude plugin list
+```
 
 ## 📖 参考
 

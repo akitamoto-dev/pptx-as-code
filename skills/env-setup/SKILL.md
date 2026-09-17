@@ -182,6 +182,7 @@ cd ~/work/deck-test && npm install && node build.js --name sample
 ```
 
 - `sample.pptx`、`sample.pdf`、`preview/sample-001.png` がすべてできれば完了。できなかったものがあれば、何が足りないかを報告する
+- このフォルダーは動作確認専用で、資料の作成には使わない。資料は作成スキルが資料ごとに新しいフォルダーを作る
 - `preview/sample-001.png` を読んで文字化けが無ければフォントも問題ない
 - 「規格違反なし」が出ていれば PowerPoint で開ける
 - Python 側の依存解決も 1 回試す: `uv run --with pymupdf python -c "import pymupdf; print('ok')"`。点検スクリプトは実体の有無を見るだけなので、取得先が塞がれている環境はここで分かる
