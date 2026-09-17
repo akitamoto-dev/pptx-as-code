@@ -10,7 +10,12 @@ row() { printf '%-16s %-6s %s\n' "$1" "$2" "$3"; }
 first_line() { "$@" 2>/dev/null | head -1; }
 
 os="$(uname -s)"
-if [ -f /.dockerenv ]; then os="$os (コンテナ)"
+# コンテナの場合、/proc/version はホストのカーネルを映す。microsoft を含めば Docker Desktop
+# on Windows（WSL2 バックエンド）と分かる。含まない場合はホストの OS を特定できない。
+if [ -f /.dockerenv ]; then
+  os="$os (コンテナ"
+  if [ -f /proc/version ] && grep -qi microsoft /proc/version; then os="$os / ホストは Windows)"
+  else os="$os / ホストの OS は不明)"; fi
 elif [ -f /proc/version ] && grep -qi microsoft /proc/version; then os="$os (WSL)"; fi
 echo "=== pptx-as-code 環境点検: $os ==="
 row "項目" "状態" "詳細"
