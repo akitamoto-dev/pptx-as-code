@@ -207,8 +207,8 @@ pptx-as-code/
 ├── infra/
 │   ├── deploy.py                    リージョンごとに調べてデプロイし、env ファイルに書き込む
 │   └── foundry-image.bicep          1 リージョン分（アカウント + デプロイ + ロール割り当て）
-├── mcp.json                         起動定義。プラグインのルートに置くと読み込まれる
-└── mcp-server/                      MCP 本体。mcp.json がこの場所を指して起動する
+├── mcp.json                         起動定義。両方の plugin.json が参照する
+└── mcp-server/                      MCP 本体。mcp.json の起動処理がこの場所を探して起動する
     ├── pyproject.toml / uv.lock     エントリポイント定義と依存の固定
     └── src/slide_image_gen_mcp/
         ├── __main__.py              エントリポイント（env ファイルの読み込み → stdio 起動）
@@ -216,10 +216,10 @@ pptx-as-code/
         ├── server.py                ツール定義（generate_slide_image、パス制限）
         ├── endpoint_pool.py         ラウンドロビン + フェイルオーバー + クールダウン
         └── foundry_client.py        Foundry 呼び出し（Entra ID 認証）
-
-起動定義をプラグインのルートに置いているのは、スキルと MCP を 1 つのプラグインとして配るため。導入も更新も 1 コマンドで済む。
-`mcp.json` は `${CLAUDE_PLUGIN_ROOT}` でプラグインの導入先を指し、同梱の本体をその場で起動する。
-リポジトリから取り直さないので、起動にネットワークが要らず、タグの管理も不要になる。
-`${PLUGIN_ROOT}` は Copilot CLI が展開するが Claude Code は展開しない。`${CLAUDE_PLUGIN_ROOT}`
-なら両方が展開するため、こちらを使っている。
 ```
+
+起動定義をプラグインに含めているのは、スキルと MCP を 1 つのプラグインとして配るため。導入も更新も 1 コマンドで済む。
+`mcp.json` はクライアントから受け取ったプラグインの導入先をもとに、同梱の本体をその場で起動する。
+リポジトリから取り直さないので、起動にネットワークが要らず、タグの管理も不要になる。
+
+`node` の短い起動処理を挟んでいる理由は [docs/architecture.md](../docs/architecture.md#画像生成-mcp) にある。導入先の値が Windows 形式で届く環境があること、変更するときに守る点（`$schema` と `${` を書かない）が分かる。

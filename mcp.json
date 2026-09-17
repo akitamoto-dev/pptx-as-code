@@ -3,8 +3,11 @@
   "mcpServers": {
     "slide-image-gen": {
       "type": "stdio",
-      "command": "uv",
-      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}/mcp-server", "slide-image-gen-mcp"]
+      "command": "node",
+      "args": [
+        "-e",
+        "const fs=require('fs'),path=require('path'),cp=require('child_process');const dirs=[process.env.CLAUDE_PLUGIN_ROOT,process.env.PLUGIN_ROOT,process.env.COPILOT_PLUGIN_ROOT].filter(Boolean).map(d=>process.platform==='win32'?d:d.replace(/\\\\/g,'/'));const root=dirs.find(d=>fs.existsSync(path.join(d,'mcp-server','pyproject.toml')));if(!root){console.error('[slide-image-gen] mcp-server が見つかりません: '+(dirs.join(', ')||'クライアントから導入先が渡されていません'));process.exit(1)}const c=cp.spawn('uv',['run','--directory',path.join(root,'mcp-server'),'slide-image-gen-mcp'],{stdio:'inherit'});['SIGINT','SIGTERM'].forEach(s=>process.on(s,()=>c.kill(s)));c.on('error',e=>{console.error('[slide-image-gen] uv を起動できません: '+e.message);process.exit(1)});c.on('exit',code=>process.exit(code==null?1:code))"
+      ]
     }
   }
 }

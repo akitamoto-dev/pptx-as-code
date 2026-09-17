@@ -23,9 +23,9 @@ pptxgenjs が出力する pptx には、PowerPoint が破損と判定する規�
 
 ```
 pptx-as-code/
-├── plugin.json                 プラグインの定義（Copilot CLI と VS Code が読む）
-├── .claude-plugin/             Claude Code 用の定義と、導入元の一覧
-├── mcp.json                    画像生成 MCP の起動定義。ルートに置くと読み込まれる
+├── plugin.json                 プラグインの定義（Copilot CLI が読む）
+├── .claude-plugin/             Claude Code と VS Code が読む定義と、導入元の一覧
+├── mcp.json                    画像生成 MCP の起動定義。両方の plugin.json が参照する
 ├── skills/                     スキル本体。それぞれ専用の資材だけを持つ
 │   ├── content-to-pptx/        内容から組み立てる手順
 │   ├── image-to-pptx/          画像の生成・変換手順と、座標把握・切り出し・比較のスクリプト
@@ -62,11 +62,23 @@ pptx-as-code/
 |---|---|
 | 画像生成 | Microsoft Foundry の GPT-Image-2。16:9 の PNG を 1 枚ずつ生成する。品質は既定で `high`（画像内の日本語が崩れにくい） |
 | MCP サーバー | FastMCP（Python）で実装。openai と azure-identity で Foundry を呼び出す |
-| 起動 | `mcp.json` が `${CLAUDE_PLUGIN_ROOT}/mcp-server` を指し、`uv run` が依存を解決して起動する。リポジトリから取り直さないので、起動にネットワークが要らず、バージョンはプラグインと一体になる |
+| 起動 | `mcp.json` が `node` で短い起動処理を実行し、プラグインの導入先にある `mcp-server` を `uv run` で起動する。リポジトリから取り直さないので、起動にネットワークが要らず、バージョンはプラグインと一体になる |
 | 公開しているもの | ツール `generate_slide_image`（モデルが呼ぶ）と、プロンプト `generate`（人がスラッシュコマンドから呼ぶ）の 2 つ |
 | 認証 | Entra ID（`DefaultAzureCredential`）。API キーは持たない |
 | 耐障害性 | 複数リージョンに展開し、呼び出しごとに分散する。制限に達したリージョンは一定時間避けて別のリージョンで再試行する |
 | 接続先 | env ファイル（`~/.config/slide-image-gen/env`）に置く。`infra/deploy.py` が書き込み、MCP が起動時に読む。起動定義には書かない |
 | インフラ | 1 リージョン分の Bicep と、それをリージョンごとに実行するデプロイスクリプト（Python） |
+
+**起動処理を挟むのは、クライアントからプラグインの導入先を受け取る方法が 1 つしかなく、その値が壊れて届く環境があるため。**
+
+- Claude Code は MCP を利用者の作業フォルダーで起動し、`cwd` を指定しても効かない。導入先は、クライアントが渡す `CLAUDE_PLUGIN_ROOT` などから得るしかない
+  [anthropics/claude-code#17565](https://github.com/anthropics/claude-code/issues/17565) に、`cwd` の指定が無視される不具合の報告と再現条件がある。
+- Windows の VS Code から Dev コンテナや WSL に接続すると、この値がコンテナ内のパスを Windows 形式に変換したもの（`\home\vscode\...`）になり、Linux 側では開けない。起動処理は区切りを `/` に直してから `uv` を呼ぶ
+- 起動処理を別のファイルにしないのは、そのファイルを指すパスも同じ理由で壊れるため
+
+変更するときは次を守る。
+
+- **ルートの `plugin.json` に `$schema` を書かない。** 書くと VS Code が Agent Plugins 1.0 形式と判定し、導入先を渡さなくなる
+- **起動処理に `${` を書かない。** VS Code と Claude Code が変数として置換し、スクリプトが壊れる
 
 設定と環境変数の詳細は [mcp-server/README.md](../mcp-server/README.md)。

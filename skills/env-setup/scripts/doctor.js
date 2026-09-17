@@ -20,8 +20,10 @@ const pad = (s, n) => s + " ".repeat(Math.max(0, n - width(s)));
 const row = (a, b, c) => console.log(`${pad(a, 16)} ${pad(b, 6)} ${c}`);
 
 // ---- 外部コマンド ----
+// シェルを通すと、Node は引数をエスケープせずに連結する。Windows では `import pymupdf` のような
+// 空白や引用符を含む引数が壊れるため、シェルが要る .cmd / .bat（npm、az など）に限る
 function run(cmd, args, opts = {}) {
-  return spawnSync(cmd, args, { encoding: "utf8", timeout: 20000, shell: WIN && !opts.noShell, ...opts });
+  return spawnSync(cmd, args, { encoding: "utf8", timeout: 20000, shell: WIN && /\.(cmd|bat)$/i.test(cmd), ...opts });
 }
 function which(cmd) {
   const exts = WIN ? ["", ".com", ".exe", ".cmd", ".bat"] : [""];
@@ -57,8 +59,9 @@ row("----------------", "------", "----------------------------------------");
 
 // ---- Node.js と pptxgenjs（PowerPoint の生成）----
 row("Node.js", "OK", process.version); // このスクリプトが動いている時点で存在する
-const NPM = which(WIN ? "npm.cmd" : "npm") || which("npm");
-if (NPM) row("npm", "OK", firstLine(run("npm", ["--version"])));
+const NPM = WIN ? "npm.cmd" : "npm";
+const HAS_NPM = !!which(NPM);
+if (HAS_NPM) row("npm", "OK", firstLine(run(NPM, ["--version"])));
 else row("npm", "なし", "Node.js と一緒に入る");
 
 let PPTX = false;
@@ -66,7 +69,7 @@ if (fs.existsSync(path.join(WORK, "node_modules", "pptxgenjs"))) {
   row("pptxgenjs", "OK", `作業ディレクトリ (${WORK})`);
   PPTX = true;
 } else {
-  const r = NPM ? run("npm", ["root", "-g"]) : null;
+  const r = HAS_NPM ? run(NPM, ["root", "-g"]) : null;
   const g = r && r.status === 0 && fs.existsSync(path.join(r.stdout.trim(), "pptxgenjs"));
   if (g) { row("pptxgenjs", "OK", "グローバル導入"); PPTX = true; }
   else row("pptxgenjs", "なし", "作業ディレクトリで npm install を実行する");
@@ -105,7 +108,7 @@ function findSoffice() {
   return null;
 }
 const SOFF = findSoffice();
-if (SOFF) row("LibreOffice", "OK", firstLine(run(SOFF, ["--version"], { noShell: true })) || SOFF);
+if (SOFF) row("LibreOffice", "OK", firstLine(run(SOFF, ["--version"])) || SOFF);
 else row("LibreOffice", "なし", "PDF 変換に必要（libreoffice-impress）");
 
 // ---- PDF → PNG ----
@@ -113,7 +116,9 @@ let PNG = false;
 const hasModule = (m) => PY && run(PY.argv[0], [...PY.argv.slice(1), "-c", `import ${m}`]).status === 0;
 if (hasModule("pymupdf") || hasModule("fitz")) { row("PyMuPDF", "OK", "PDF を PNG にする"); PNG = true; }
 else if (which("pdftoppm")) { row("pdftoppm", "OK", firstLine(run("pdftoppm", ["-v"]))); PNG = true; }
-else row("PDF→PNG", "なし", "pip install pymupdf、または poppler-utils（uv があれば自動解決）");
+// build.js は、手元の Python に PyMuPDF が無ければ uv に取得させて PNG にする
+else if (UV) { row("PDF→PNG", "OK", "uv が PyMuPDF を取得して実行する（初回は取得に時間がかかる）"); PNG = true; }
+else row("PDF→PNG", "なし", "uv を導入する（PyMuPDF を自動で取得する）。または poppler-utils");
 
 // ---- 日本語フォント ----
 // Windows には fc-list が無い。代わりにフォントフォルダを直接見る
@@ -135,9 +140,15 @@ if (WIN) {
 }
 
 // ---- 画像生成と開発 ----
-const AZ = which("az");
-if (AZ) row("Azure CLI", "OK", firstLine(run("az", ["version", "--query", '"azure-cli"', "-o", "tsv"])));
-else row("Azure CLI", "なし", "画像生成 MCP のデプロイに必要");
+// 引用符付きの --query を渡さずに済むよう、JSON で受け取ってから読む
+const AZ_CMD = WIN ? "az.cmd" : "az";
+const AZ = which(AZ_CMD);
+if (AZ) {
+  const r = run(AZ_CMD, ["version", "-o", "json"], { timeout: 60000 });
+  let v;
+  try { v = JSON.parse(r.stdout)["azure-cli"]; } catch (_) { v = firstLine(r); }
+  row("Azure CLI", "OK", v || "バージョンを取得できない");
+} else row("Azure CLI", "なし", "画像生成 MCP のデプロイに必要");
 if (which("git")) row("git", "OK", firstLine(run("git", ["--version"])));
 else row("git", "なし", "clone に必要");
 

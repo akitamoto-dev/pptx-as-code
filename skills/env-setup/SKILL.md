@@ -35,6 +35,8 @@ node <このスキル>/scripts/doctor.js <作業ディレクトリ>
 
 **`bash` で実行しない。OS を問わず `node` で実行する。** Windows では PATH の `bash.exe` が WSL を起動するため、点検結果が Windows ではなく WSL のものになる。エラーにならないので取り違えに気づけない。
 
+**Node.js が無い環境では、点検スクリプトは起動しない。** その場合は `command -v node python3 soffice uv az`（Windows は `Get-Command node, python, uv, az -ErrorAction SilentlyContinue`）で主なものだけを確かめ、§2 で Node.js を含めて導入してから改めて点検する。
+
 ## 2. 導入する
 
 足りないものをすべて入れる。用途が限られるものも、後で詰まらないようにここで入れておく。
@@ -47,23 +49,23 @@ node <このスキル>/scripts/doctor.js <作業ディレクトリ>
 
 uv（Linux / WSL）は `curl -LsSf https://astral.sh/uv/install.sh | sh`。導入後はシェルを開き直すか `~/.local/bin` を PATH に足す。
 
-**uv は、既定の PATH から引ける場所にも置く。** 画像生成 MCP を起動するのは、利用者のシェルではなくクライアント本体（Copilot CLI、VS Code に同梱の Copilot CLI、Claude Code）で、これらは**ログインシェルの PATH を引き継がない**。`~/.local/bin` に入れただけでは「見つからない」で起動に失敗し、しかも子プロセスが始まる前に落ちるため**エラーが出力に残らない**。次で確かめる。
+**uv と node は、既定の PATH から引ける場所にも置く。** 画像生成 MCP は `node` で起動し、そこから `uv` を呼ぶ。起動するのは利用者のシェルではなくクライアント本体（Copilot CLI、VS Code、Claude Code）で、これらは**ログインシェルの PATH を引き継がない**。`~/.local/bin` や nvm の配下に入れただけでは「見つからない」で起動に失敗し、しかも子プロセスが始まる前に落ちるため**エラーが出力に残らない**。次で確かめる。
 
 ```bash
-env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c 'command -v uv'
+env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c 'command -v uv; command -v node'
 ```
 
-何も出なければ届いていない。対処は OS ごとに次のとおり。
+パスが 2 行出なければ、出なかった方が届いていない。対処は OS ごとに次のとおり。
 
 | OS | 対処 |
 |---|---|
-| Linux / WSL / コンテナ | `sudo ln -sf ~/.local/bin/uv /usr/local/bin/uv && sudo ln -sf ~/.local/bin/uvx /usr/local/bin/uvx`（`/usr/local/bin` はどのクライアントの PATH にも入っている） |
+| Linux / WSL / コンテナ | uv は `sudo ln -sf ~/.local/bin/uv /usr/local/bin/uv && sudo ln -sf ~/.local/bin/uvx /usr/local/bin/uvx`。node は apt で入れていれば `/usr/bin` にあるので不要で、nvm などで入れた場合は `sudo ln -sf "$(command -v node)" /usr/local/bin/node`（`/usr/local/bin` はどのクライアントの PATH にも入っている） |
 | macOS | Homebrew の bin（`/opt/homebrew/bin` など）が上の PATH に無ければ、同様にリンクする |
 | Windows | winget で入れると利用者の PATH に追加されるが、**既に起動しているプロセスには届かない**。VS Code とターミナルを再起動する |
 
 **クライアントの設定ファイル（`mcp.json` など）を絶対パスに書き換えて回避しない。** プラグインを更新すると消え、パスは OS と利用者ごとに違うので配布もできない。直すのは PATH の側。
 
-**uv を入れたら、クライアントを再起動してもらう。** 起動中のプロセスは PATH を取り込んだ時点の値を持ち続けるため、あとから入れたものが見えない。VS Code は **Reload Window では足りない**。エージェントを動かしているプロセス（agentHost）が残るので、統合ターミナルで `pkill -f "[-]-type=agentHost"` を実行してから Reload Window する。コンテナを作り直せる場合は、その方が確実。
+**uv や node を入れたら、クライアントを再起動してもらう。** 起動中のプロセスは PATH を取り込んだ時点の値を持ち続けるため、あとから入れたものが見えない。VS Code は **Reload Window では足りない**。エージェントを動かしているプロセス（agentHost）が残るので、統合ターミナルで `pkill -f "[-]-type=agentHost"` を実行してから Reload Window する。コンテナを作り直せる場合は、その方が確実。
 
 Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash`、macOS が `brew install azure-cli`、Windows が `winget install Microsoft.AzureCLI`。画像生成 MCP でしか使わないが、使う段になって止まらないよう、ここで一緒に入れる。
 
@@ -143,6 +145,8 @@ mkdir -p ~/.config/pip && printf '[global]\nindex-url = <取得先>\n' > ~/.conf
 mkdir -p ~/.config/uv && printf '[[index]]\nurl = "<取得先>"\ndefault = true\n' > ~/.config/uv/uv.toml
 ```
 
+Windows では、pip は `%APPDATA%\pip\pip.ini`、uv は `%APPDATA%\uv\uv.toml` に同じ内容を書く。`npm config set` は OS を問わず使える。
+
 **環境変数（`UV_INDEX_URL` など）では足りない。** 画像生成 MCP はエージェントが子プロセスとして起動するため、シェルで設定した値が引き継がれない。上のように設定ファイルへ書き、書いたらエージェントを起動し直す（MCP の定義は起動時に読まれる）。
 
 **npm 側だけ見つかった場合は、同じホストの PyPI 用パスを試す。** 組織のパッケージプロキシは、1 つのホストが npm・PyPI などをパス違いで配っていることが多い。実際、npm だけ設定されていて Python 側は未設定、という環境がある。
@@ -202,7 +206,7 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
 
    使えるリージョンが 1 つも無い場合（終了コード 1）は、表示された理由（クォータ、Azure Policy、権限など）を伝え、起動定義の登録には進まない。ロールを付与する権限が無い場合は、表示された付与コマンドを管理者に依頼するよう伝える
 
-3. **起動定義はプラグインに入っている**。`mcp.json` がプラグインのルートにあるため、プラグインを導入していれば追加の登録は要らない。接続先を設定ファイルに書かないので、起動定義は誰でも同じ 1 行になる
+3. **起動定義はプラグインに入っている**。`mcp.json` をプラグインの定義（`plugin.json` と `.claude-plugin/plugin.json`）が参照しているため、プラグインを導入していれば追加の登録は要らない。接続先を設定ファイルに書かないので、起動定義は誰でも同じ 1 行になる
 
    プラグインを使わずに読ませている場合（clone して `--plugin-dir` を付けている場合など）だけ、手で登録する。
 

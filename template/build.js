@@ -23,6 +23,9 @@ const WORK = __dirname;
 const SRC = path.join(WORK, "deck-src");
 const TOOLS = path.join(WORK, "tools");
 const WIN = process.platform === "win32";
+// Windows の Python は、パイプへの出力をシステムの文字コード（日本語環境では cp932）で書く。
+// 規格検査の結果が化けて読めなくなるため、子プロセスの Python に UTF-8 で書かせる
+process.env.PYTHONUTF8 = "1";
 
 // ---- 引数 ----
 const args = { noPdf: false, noPng: false, pages: null, name: null, parts: null, dpi: 110 };
@@ -53,8 +56,10 @@ const PDF = path.join(WORK, `${NAME}.pdf`);
 const PREVIEW = path.join(WORK, "preview");
 
 // ---- 外部コマンドの探索 ----
+// シェルを通すと、Node は引数をエスケープせずに連結する。Windows では空白を含むパス
+// （OneDrive 配下など）が壊れるため、シェルが要る .cmd / .bat（npm など）に限る
 function run(cmd, cmdArgs, opts = {}) {
-  return spawnSync(cmd, cmdArgs, { encoding: "utf8", shell: WIN && !opts.noShell, ...opts });
+  return spawnSync(cmd, cmdArgs, { encoding: "utf8", shell: WIN && /\.(cmd|bat)$/i.test(cmd), ...opts });
 }
 function which(cmd) {
   const exts = WIN ? ["", ".com", ".exe", ".cmd", ".bat"] : [""];
@@ -189,7 +194,7 @@ function toPdf() {
   fontCheck(JSON.parse(fs.readFileSync(path.join(SRC, "theme.json"), "utf8")).fonts.body);
   // LibreOffice はプロファイルを共有すると別ディレクトリの同時変換が無言で失敗するため、作業ディレクトリ配下に分離する
   const profile = pathToFileURL(path.join(WORK, ".soffice-profile")).href;
-  const r = run(soffice, [`-env:UserInstallation=${profile}`, "--headless", "--convert-to", "pdf", "--outdir", WORK, OUT], { noShell: true, timeout: 180000 });
+  const r = run(soffice, [`-env:UserInstallation=${profile}`, "--headless", "--convert-to", "pdf", "--outdir", WORK, OUT], { timeout: 180000 });
   if (!fs.existsSync(PDF)) { console.error("エラー: PDF 変換に失敗\n" + (r.stdout || "") + (r.stderr || "")); return false; }
   console.log(`(3) pdf: ${path.relative(WORK, PDF)}（LibreOffice）`);
   return true;
@@ -210,16 +215,26 @@ function toPng(py) {
   // 古いページが残らないよう同名の PNG を消す
   for (const f of fs.readdirSync(PREVIEW)) if (f.startsWith(`${NAME}-`) && f.endsWith(".png")) fs.unlinkSync(path.join(PREVIEW, f));
   const prefix = path.join(PREVIEW, NAME);
-  const pageArgs = args.pages ? ["--pages", args.pages] : [];
-  if (py) {
-    const r = run(py[0], [...py.slice(1), path.join(TOOLS, "render.py"), PDF, prefix, "--dpi", String(args.dpi), ...pageArgs]);
+  const renderArgs = [path.join(TOOLS, "render.py"), PDF, prefix, "--dpi", String(args.dpi), ...(args.pages ? ["--pages", args.pages] : [])];
+  // 手元の Python に PyMuPDF が無ければ、uv が render.py 冒頭の依存宣言から一時環境を作って実行する。
+  // Windows には pdftoppm が無いため、PyMuPDF を手で入れずに PNG を出せるのはこの経路だけ
+  const tries = [];
+  if (py) tries.push([py[0], [...py.slice(1), ...renderArgs]]);
+  if (which("uv")) tries.push(["uv", ["run", ...renderArgs]]);
+  const errors = [];
+  for (const [cmd, cmdArgs] of tries) {
+    const r = run(cmd, cmdArgs);
     if (r.status === 0) { console.log(`(4) png: preview/${NAME}-NNN.png` + (r.stdout ? `（${r.stdout.trim()}）` : "")); return true; }
-    note((r.stderr || "").trim());
+    errors.push((r.stderr || "").trim());
   }
   const pdftoppm = which("pdftoppm");
-  if (!pdftoppm) { note("(4) PyMuPDF も pdftoppm も無いため PNG は生成しない。PDF を直接確認する"); return false; }
+  if (!pdftoppm) {
+    for (const e of errors) if (e) note(e);
+    note("(4) PyMuPDF も pdftoppm も無く、uv でも取得できなかったため PNG は生成しない。PDF を直接確認する");
+    return false;
+  }
   const range = args.pages ? args.pages.split("-") : null;
-  const r = run(pdftoppm, ["-png", "-r", String(args.dpi), ...(range ? ["-f", range[0], "-l", range[1] || range[0]] : []), PDF, prefix], { noShell: true });
+  const r = run(pdftoppm, ["-png", "-r", String(args.dpi), ...(range ? ["-f", range[0], "-l", range[1] || range[0]] : []), PDF, prefix]);
   if (r.status !== 0) { note("pdftoppm に失敗: " + (r.stderr || "")); return false; }
   // pdftoppm はページ数の桁で名前がぶれるため 3 桁に揃える
   for (const f of fs.readdirSync(PREVIEW)) {

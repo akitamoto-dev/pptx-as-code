@@ -121,11 +121,7 @@ pptx を伴わず画像だけが必要な場合は、チャットで「slide-ima
 - [GitHub Copilot CLI のインストール](https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli)
 - [Claude Code のセットアップ](https://code.claude.com/docs/en/setup)
 
-**Windows では先に PowerShell 7 を導入する。** GitHub Copilot CLI が要求するバージョンで、標準搭載の Windows PowerShell 5.1 とは別物。
-
-```bash
-winget install Microsoft.PowerShell
-```
+**Windows では PowerShell 7 から実行する。** GitHub Copilot CLI が要求するバージョンで、標準搭載の Windows PowerShell 5.1 とは別物。winget で GitHub Copilot CLI を導入すると依存関係として一緒に入るため、導入後はスタートメニューから PowerShell 7 を開き直して次に進む。
 
 ### 2. プラグインを導入する
 

@@ -31,7 +31,8 @@ cd /tmp/check && npm install && node build.js --name sample
 
 ## 画像生成 MCP を変更した場合
 
-MCP 本体（`mcp-server/`）はプラグインに同梱され、`mcp.json` が `${CLAUDE_PLUGIN_ROOT}` でその場所を指す。
+MCP 本体（`mcp-server/`）はプラグインに同梱され、`mcp.json` の起動処理がクライアントから受け取った導入先をもとにその場所を探す。
+**ルートの `plugin.json` に `$schema` を書かない。起動処理に `${` を書かない。** どちらも MCP が起動しなくなる。理由は [architecture.md](architecture.md#画像生成-mcp)。
 **スキルと同様に、commit して push すれば配布される。** タグの作成は不要。
 
 依存を変更した場合（`pyproject.toml`）は `uv lock` で `uv.lock` を更新してから commit する。利用者側では `uv run` が lock を参照して自動的に再導入する。
