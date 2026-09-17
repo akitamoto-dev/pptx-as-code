@@ -158,7 +158,7 @@ copilot mcp add slide-image-gen -- uv run --directory ~/pptx-as-code/mcp-server 
 | `prompt` | string | （必須） | 画像生成の指示文。会話履歴を統合した詳細な指示を推奨 |
 | `quality` | `low` / `medium` / `high` | `high` | 画質。既定の `high` は画像内の日本語が崩れにくい。構図だけを速く見たいときだけ下げる |
 | `reference_image_path` | string | null | 参考画像のパス（**絶対パス**）。指定時は `images.edit` |
-| `output_dir` | string | env で決まる | 保存先（**絶対パス**）。資料を作っているフォルダーの中を指定する |
+| `output_dir` | string | env で決まる | 保存先（**絶対パス**）。資料を作っている場合はその作業フォルダーの中、画像だけを作る場合は利用者が開いているプロジェクトの中を指定する |
 | `filename_hint` | string | null | ファイル名ヒント（英数字とハイフンに正規化） |
 
 **`reference_image_path` と `output_dir` は絶対パスで渡す。** このサーバーのカレントディレクトリは、起動したクライアント（Copilot CLI、VS Code、Claude Code）が決めるもので、資料を作っているフォルダーとは限らない。相対パスを渡すと、意図しない場所に保存される。
