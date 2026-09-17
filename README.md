@@ -30,16 +30,16 @@ flowchart LR
     IN(["内容"])
     BF["blue-format（Skill）<br/>書式と文章の規範<br/>併用する場合のみ"]
     C2P["content-to-pptx（Skill）"]
-    LINT["pptx-lint（Skill）<br/>全ページを検査"]
+    LINT["pptx-lint（Skill）<br/>作成したページを検査<br/>（利用者が明確に指示した場合のみ実行）"]
     OUT(["pptx + PDF"])
 
     IN --> C2P
-    C2P --> OUT
+    C2P --> LINT
+    LINT --> OUT
     BF -.-> C2P
-    C2P -.->|指定した場合のみ| LINT
-    LINT -.->|指摘| C2P
     OUT -.->|修正| C2P
     style C2P fill:#0078D4,stroke:#005A9E,color:#ffffff
+    style LINT stroke-dasharray: 5 5
 ```
 
 Markdown・テキスト・会話での指示を、そのままスライドの定義に変換する。表・箇条書き・文章が中心の資料に適する。画像生成は使用しない。
@@ -52,21 +52,21 @@ flowchart LR
     IMG(["画像<br/>参考・変換対象"])
     BF["blue-format（Skill）<br/>書式と文章の規範<br/>併用する場合のみ"]
     I2P["image-to-pptx（Skill）"]
-    LINT["pptx-lint（Skill）<br/>全ページを検査"]
+    LINT["pptx-lint（Skill）<br/>作成したページを検査<br/>（利用者が明確に指示した場合のみ実行）"]
     OUT(["pptx + PDF"])
     GEN[["slide-image-gen（MCP）<br/>GPT-Image-2 で<br/>スライドの案を生成"]]
 
     IN --> I2P
     IMG --> I2P
-    I2P --> OUT
+    I2P --> LINT
+    LINT --> OUT
     I2P -->|生成を依頼| GEN
     GEN -->|画像| I2P
     BF -.-> I2P
     BF -.-> GEN
-    I2P -.->|指定した場合のみ| LINT
-    LINT -.->|指摘| I2P
     OUT -.->|修正| I2P
     style I2P fill:#0078D4,stroke:#005A9E,color:#ffffff
+    style LINT stroke-dasharray: 5 5
 ```
 
 **画像生成モデルの表現力を、資料の品質に反映させる方法。**
@@ -160,33 +160,32 @@ claude plugin install pptx-as-code@pptx-as-code
 
 ### 4. 動作確認
 
-1 ページの資料を作成して確認する。
-
-内容から直接作成する方法。
+#### 内容から直接作成する方法
 
 ```
 LLM とは何かを説明する 1 ページの資料を作成してください。
 /pptx-as-code:blue-format /pptx-as-code:content-to-pptx を使用してください。
 ```
 
-画像を経由して作成する方法（画像生成 MCP の設定が必要）。
+#### 画像を経由して作成する方法（画像生成 MCP の設定が必要）
 
 ```
 AIエージェント とは何かを説明する 1 ページの資料を作成してください。
 /pptx-as-code:blue-format /pptx-as-code:image-to-pptx を使用してください。
 ```
 
-出力された pptx を PowerPoint で開き、崩れがなければ完了。
-
-**MCP のツールはスラッシュコマンドの候補に表示されない。** ツールはエージェントが呼び出すもので、利用者が `/` から起動する対象ではないため。質問文にも記載せず、`image-to-pptx` を呼び出せばその中で使用される。
-画像生成のみを直接呼び出す場合は、チャットで「slide-image-gen で画像を作成」と指示する。Claude Code ではスラッシュコマンド `/mcp__slide-image-gen__generate` も使用できる。
-MCP の認識状況は、セッション内で `/mcp` を実行すると確認できる（Claude Code では起動前に `claude mcp list` でも確認できる）。
+#### 参考フォーマットの画像を指定して、作成する方法（画像生成 MCP の設定が必要）
+※ 参照画像の配置場所が、画像生成MCPが読める場所である必要がある
+```
+./image.png のスライドのフォーマットで、生成AIの仕組みを説明する 1 ページの資料を作成してください。
+/pptx-as-code:content-to-pptx を使用してください。
+```
 
 ## 🔄 更新
 
 カタログ（marketplace）とプラグインの順に取り込む。カタログは提供中のバージョンの索引で、プラグイン本体とは別に管理される。
 
-GitHub Copilot。Windows では、VS Code と GitHub Copilot CLI を終了してから実行する。起動中の画像生成 MCP が導入先のファイルを使用しているため、そのままでは更新に失敗する。
+GitHub Copilot。
 
 ```bash
 copilot plugin marketplace update pptx-as-code
@@ -199,6 +198,8 @@ Claude Code。
 claude plugin marketplace update pptx-as-code
 claude plugin update pptx-as-code@pptx-as-code
 ```
+
+**更新が上手くいかない場合は、VS Code や GitHub Copilot CLI を終了してから再実行する。** 起動中の画像生成 MCP が導入先のファイルを使用しているため、そのままでは更新に失敗することがある。
 
 **更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行する（Windows では終了してから更新しているため、VS Code を起動し直す）。画像生成 MCP を更新した場合は、ツール選択で `slide-image-gen` の「更新ツール」を押す。
 
