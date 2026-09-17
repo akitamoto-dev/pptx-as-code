@@ -6,7 +6,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "${PLUGIN_ROOT}",
+        "git+https://github.com/akitamoto-dev/pptx-as-code.git@v0.1.0#subdirectory=plugins/slide-image-gen",
         "slide-image-gen-mcp"
       ]
     }
