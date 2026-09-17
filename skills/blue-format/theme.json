@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "name": "blue",
-  "description": "青を基調にした技術資料向けの既定テーマ。値は実運用デッキの pptx 実測に合わせてある",
+  "description": "青を基調にした技術資料向けの既定テーマ。値は実運用デッキの pptx 実測に合わせてある。fonts は作成先の PowerPoint で使われる名前なので、手元に無いことを理由に書き換えない",
   "layout": { "width": 13.33, "height": 7.5, "left": 0.55, "contentWidth": 12.23, "contentBottom": 7.1 },
   "fonts": {
     "body": "Yu Gothic UI",

@@ -29,7 +29,7 @@ pptx-as-code/
 ├── skills/                     スキル本体。それぞれ専用の資材だけを持つ
 │   ├── content-to-pptx/        内容から組み立てる手順
 │   ├── image-to-pptx/          画像の生成・変換手順と、座標把握・切り出し・比較のスクリプト
-│   ├── ms-format/              書式の定義、文章と構成のルール、アイコン、型の見本
+│   ├── blue-format/            書式の定義、文章と構成のルール、アイコン、型の見本
 │   ├── pptx-lint/              検査の観点と、指摘の返し方
 │   └── env-setup/              環境の点検スクリプトと、OS 別の導入手順
 ├── template/                   作業フォルダの雛形。描画用の関数、ビルド、規格の検査、既定の書式
@@ -37,8 +37,10 @@ pptx-as-code/
 ├── mcp-server/                 画像生成 MCP の本体（Python）。mcp.json がこの場所を指して起動する
 ├── infra/                      画像生成 MCP が使用する Microsoft Foundry と画像生成モデルを
 │                               Azure にデプロイするスクリプトと Bicep
-├── devcontainer/               コンテナで使用する場合の定義。利用者のプロジェクトにコピーする
-└── docs/                       人が読む説明（この文書）
+├── devcontainer/               Dev コンテナ（サンドボックス環境）の定義。利用者のプロジェクトへ複製する
+├── docs/                       人が読む説明（この文書、書式と規範、開発の手順）
+├── LICENSE                     本体のライセンス（MIT）
+└── THIRD-PARTY-NOTICES.md      同梱物の権利表示
 ```
 
 ### なぜ `template/` と `references/` が `skills/` の外にあるか

@@ -110,6 +110,15 @@ async function buildPptx() {
   // フォントサイズは絶対単位なので、キャンバスが小さいと文字が相対的に大きく見える。必ず theme の値で定義する
   pres.defineLayout({ name: "THEME", width: theme.layout.width, height: theme.layout.height });
   pres.layout = "THEME";
+  // デッキ既定のフォント。ヘルパーが描くテキストは全 run に fontFace が入るので影響しないが、
+  // PowerPoint で後からテキストボックスを足したときはこれが使われる
+  pres.theme = { headFontFace: theme.fonts.body, bodyFontFace: theme.fonts.body };
+  // 本命のフォントが自分の代替候補に入っている＝手元に無いことを理由に格上げされた跡。
+  // 作成先の PowerPoint では本命が使えるので、この書き換えは成果物の書式を落とすだけになる
+  const fb = (theme.fonts.fallback && theme.fonts.fallback.body) || [];
+  if (fb.includes(theme.fonts.body)) {
+    note(`theme.json の fonts.body が代替候補の「${theme.fonts.body}」になっている。手元に無いことを理由に書き換えたのであれば戻すこと`);
+  }
 
   // 生成順にスライドを集める（pptxgenjs は追加順に slide1.xml.. を書くので添字がスライド番号）
   const slides = [];
@@ -125,14 +134,16 @@ async function buildPptx() {
   if (!slides.length) fail("スライドが 1 枚もありません");
 
   await pres.writeFile({ fileName: OUT });
-  await setSlideNames(OUT, slides.map((s) => s.__pdftitle));
+  await finishPptx(OUT, slides.map((s) => s.__pdftitle), theme.fonts.body);
   console.log(`(1) pptx: ${path.relative(WORK, OUT)}（${slides.length} 枚）`);
   return slides.length;
 }
-// 各スライドの <p:cSld name> を実タイトルにする。LibreOffice の PDF 変換はこの名前をしおりに使う
-async function setSlideNames(file, titles) {
+// pptxgenjs が書けない箇所を、zip を 1 度だけ開いて直す。
+//   (1) 各スライドの <p:cSld name> を実タイトルにする。LibreOffice の PDF 変換はこの名前をしおりに使う
+//   (2) テーマの日本語・記号フォントを本文フォントに合わせる
+async function finishPptx(file, titles, font) {
   const JSZip = loadJSZip();
-  if (!JSZip) { note("jszip を解決できないため PDF のしおり名は既定のまま（pptx は生成済み）"); return; }
+  if (!JSZip) { note("jszip を解決できないため PDF のしおり名とテーマのフォントは既定のまま（pptx は生成済み）"); return; }
   const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const zip = await JSZip.loadAsync(fs.readFileSync(file));
   for (let i = 0; i < titles.length; i++) {
@@ -142,6 +153,15 @@ async function setSlideNames(file, titles) {
     let xml = await entry.async("string");
     xml = xml.replace(/<p:cSld(?:\s+name="[^"]*")?>/, `<p:cSld name="${esc(titles[i])}">`);
     zip.file(`ppt/slides/slide${i + 1}.xml`, xml);
+  }
+  // pptxgenjs の theme が書くのは欧文（a:latin）だけで、日本語が当たる a:ea と記号の a:cs は空のまま残る。
+  // 空だと script="Jpan" の既定（游ゴシック）が使われ、後から足したテキストボックスだけ別の字形になる
+  const themeEntry = zip.file("ppt/theme/theme1.xml");
+  if (themeEntry) {
+    let xml = await themeEntry.async("string");
+    xml = xml.replace(/<a:(ea|cs) typeface=""\s*\/>/g, `<a:$1 typeface="${esc(font)}"/>`);
+    xml = xml.replace(/<a:font script="Jpan" typeface="[^"]*"\s*\/>/g, `<a:font script="Jpan" typeface="${esc(font)}"/>`);
+    zip.file("ppt/theme/theme1.xml", xml);
   }
   fs.writeFileSync(file, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
 }
@@ -166,7 +186,7 @@ function toPdf() {
   if (fs.existsSync(PDF)) fs.unlinkSync(PDF);
   const soffice = findSoffice();
   if (!soffice) { note("(3) LibreOffice が無いため PDF は生成しない。pptx を PowerPoint で開いて確認する"); return false; }
-  fontCheck();
+  fontCheck(JSON.parse(fs.readFileSync(path.join(SRC, "theme.json"), "utf8")).fonts.body);
   // LibreOffice はプロファイルを共有すると別ディレクトリの同時変換が無言で失敗するため、作業ディレクトリ配下に分離する
   const profile = pathToFileURL(path.join(WORK, ".soffice-profile")).href;
   const r = run(soffice, [`-env:UserInstallation=${profile}`, "--headless", "--convert-to", "pdf", "--outdir", WORK, OUT], { noShell: true, timeout: 180000 });
@@ -174,13 +194,13 @@ function toPdf() {
   console.log(`(3) pdf: ${path.relative(WORK, PDF)}（LibreOffice）`);
   return true;
 }
-// テーマのフォントが無い環境では PDF が代替フォントで描画される。気づけるように一言出す
-function fontCheck() {
+// 手元にフォントが無いと PDF と PNG だけが代替フォントで描かれる。差し替えを促す警告と
+// 読まれないよう、pptx は正しいことと theme.json を触らないことまで書く
+function fontCheck(body) {
   if (WIN || !which("fc-list")) return;
-  const theme = JSON.parse(fs.readFileSync(path.join(SRC, "theme.json"), "utf8"));
   const r = run("fc-list", [":", "family"]);
-  if (r.status === 0 && !r.stdout.includes(theme.fonts.body)) {
-    note(`フォント「${theme.fonts.body}」が無いため、PDF は代替フォントで描画される（PowerPoint では正しく出る）`);
+  if (r.status === 0 && !r.stdout.includes(body)) {
+    note(`フォント「${body}」が手元に無いため、PDF と PNG は代替フォントで描画される。pptx には名前が入るので PowerPoint では正しく出る。theme.json は変更しない`);
   }
 }
 

@@ -1,12 +1,12 @@
 ---
-name: ms-format
+name: blue-format
 description: "スライドの書式を与える。青基調の所定フォーマット（タイトル＋キーメッセージ＋＜見出し＞の構成）と、文章・構成の規範を content-to-pptx / image-to-pptx に適用する。書式の値・文章のルール・Fluent アイコン・見本スライドを持ち、画像生成 MCP を使うときは作風の指定にもなる。「スライド作成」「資料作成」「いつもの書式」「青基調」「所定のフォーマット」でトリガー。単独では資料を作れないので、作成スキルと併用する。"
 ---
 
-# ms-format スキル
+# blue-format スキル
 
-技術説明資料の標準書式。**書式（色・フォント・座標）と、文章・構成の規範の両方**を定める。
-Microsoft 全社の公式テンプレートではなく、技術説明資料向けに実運用の資料から起こしたもの。
+技術説明資料向けの書式。**書式（色・フォント・座標）と、文章・構成の規範の両方**を定める。
+実運用の資料から起こしたもので、青を基調とすることから `blue` と呼んでいる。
 
 このスキル単体では資料を作れない。生成の仕組みは [../content-to-pptx/SKILL.md](../content-to-pptx/SKILL.md) が持つ。
 
@@ -29,13 +29,13 @@ bash <このスキル>/apply.sh <作業ディレクトリ>
 |---|---|
 | 色 | 主色 `0078D4`、濃い青 `005A9E`、薄い青 `E8F2FC`、本文 `333333`、補足 `666666` |
 | 赤 | `B91C1C`。攻撃の起点・最終的な被害・禁止だけに使う |
-| フォント | 日本語は Yu Gothic UI（代替 Meiryo UI → Noto Sans CJK JP）、コードは Consolas |
+| フォント | 日本語は Yu Gothic UI、コードは Consolas。**手元に無い環境でも書き換えない。** pptx に入るのは名前で、描画するのは開いた人の PowerPoint |
 | 構成 | タイトル → キーメッセージ → ＜見出し＞ → 本文・図・表 → 出典 |
 | アイコン | Fluent UI System Icons。`icons/icons.json` に定義があり、足りなければ追記して `uv run tools/fetch_icons.py` で取得する |
 
 ## 素材の権利
 
-同梱のアイコンは [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons)（Microsoft 製・MIT。取得できる字形と命名がここで分かる）。
+同梱のアイコンは [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons)（MIT ライセンス。取得できる字形と命名がここで分かる）。商用利用できるが、**MIT には表示条件があるため、資料を社外へ配布するときはライセンス表記を保持する。** 表示の実体は [../../THIRD-PARTY-NOTICES.md](../../THIRD-PARTY-NOTICES.md) にある。
 別のセットに差し替える場合も同じで、Lucide は ISC、Tabler は MIT、Material Symbols は Apache-2.0（`icons.json` の prefix を変えれば同じ手順で取得できる）。
 PowerPoint に組み込まれているアイコンは、文書の中で使う分には契約の範囲だが、単体で抜き出しての再配布・再販ができない。取得の手段にしない。
 

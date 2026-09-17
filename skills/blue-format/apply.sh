@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ms-format の書式とアイコンを作業ディレクトリへ適用する。
+# blue-format の書式とアイコンを作業ディレクトリへ適用する。
 # 使い方: bash <このスキル>/apply.sh <作業ディレクトリ>
 set -euo pipefail
 

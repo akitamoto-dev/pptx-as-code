@@ -1,6 +1,6 @@
-# プラグインの改修
+# 開発
 
-書式の規範、描画関数、スキルの手順を変更する場合の手順。構成は [docs/architecture.md](docs/architecture.md)。
+書式の規範、描画関数、スキルの手順を変更する場合の手順。構成は [architecture.md](architecture.md)。
 
 ## 変更をその場で検証する
 
@@ -18,12 +18,12 @@ GitHub Copilot CLI と Claude Code のどちらも、起動時に `--plugin-dir 
 
 ## 見本を変更した場合
 
-`skills/ms-format/samples/sample.js` を変更したら、ビルドが完了することを確認する。
+`skills/blue-format/samples/sample.js` を変更したら、ビルドが完了することを確認する。
 
 ```bash
 cp -r template/. /tmp/check/
-bash skills/ms-format/apply.sh /tmp/check
-cp skills/ms-format/samples/sample.js /tmp/check/deck-src/
+bash skills/blue-format/apply.sh /tmp/check
+cp skills/blue-format/samples/sample.js /tmp/check/deck-src/
 cd /tmp/check && npm install && node build.js --name sample
 ```
 
@@ -42,7 +42,7 @@ MCP 本体（`mcp-server/`）はプラグインに同梱され、`mcp.json` が 
 
 **上げるのは、利用者に伝えたい変更があるときだけ。** 動作には関与せず、表示にのみ使われるため、内部的な修正では上げなくてよい。
 
-利用者側の取り込み手順は [README.md の「更新」](README.md#更新)。カタログを更新してからプラグインを更新し、クライアントの再起動を依頼する。
+利用者側の取り込み手順は [README.md の「更新」](../README.md)。カタログを更新してからプラグインを更新し、クライアントの再起動を依頼する。
 
 ## 書かないもの
 

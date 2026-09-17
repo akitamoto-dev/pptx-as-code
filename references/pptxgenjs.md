@@ -33,7 +33,8 @@
 
 ## フォント
 
-`fontFace` には単一のフォント名しか指定できず、フォールバックは書けない。無い環境では PowerPoint がフォント置換を行い、LibreOffice はシステムの代替フォントで描画する（`build.js` が警告する）。`theme.json` の `fonts.fallback` は人が代替を選ぶための候補で、自動では使われない。
+`fontFace` には単一のフォント名しか指定できず、フォールバックは書けない。**pptx に入るのは名前だけで、実際に描画するのは開いた人の PowerPoint。** 手元にそのフォントが無くても pptx は正しく、影響するのは LibreOffice が描く PDF と PNG の見た目だけになる（`build.js` が警告する）。`theme.json` の `fonts.fallback` は、本命が無い環境で何に置き換わるかの記録であり、`fonts.body` を差し替えるための候補ではない。
+デッキ既定のフォント（`ppt/theme/theme1.xml`）は `build.js` が本文フォントに揃える。ヘルパーが描くテキストは全 run に `fontFace` が入るため影響しないが、PowerPoint で後からテキストボックスを足したときの既定になる。
 Linux に Consolas は無いため、PDF のコードは DejaVu Sans Mono 等で描画される。PDF は確認用と位置づけ、見た目の最終確認は PowerPoint で行う。
 
 ## オプションオブジェクト
