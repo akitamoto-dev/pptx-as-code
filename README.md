@@ -178,7 +178,7 @@ AIエージェント とは何かを説明する 1 ページの資料を作成�
 ※ 参照画像の配置場所が、画像生成MCPが読める場所である必要がある
 ```
 ./image.png のスライドのフォーマットで、生成AIの仕組みを説明する 1 ページの資料を作成してください。
-/pptx-as-code:content-to-pptx を使用してください。
+/pptx-as-code:image-to-pptx を使用してください。
 ```
 
 ## 🔄 更新
@@ -199,9 +199,9 @@ claude plugin marketplace update pptx-as-code
 claude plugin update pptx-as-code@pptx-as-code
 ```
 
-**更新が上手くいかない場合は、VS Code や GitHub Copilot CLI を終了してから再実行する。** 起動中の画像生成 MCP が導入先のファイルを使用しているため、そのままでは更新に失敗することがある。
+**更新に失敗した場合は、VS Code や GitHub Copilot CLI を終了してから再実行する。** 起動中の画像生成 MCP が導入先のファイルを使用しているため、そのままでは更新に失敗することがある。
 
-**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行する（Windows では終了してから更新しているため、VS Code を起動し直す）。画像生成 MCP を更新した場合は、ツール選択で `slide-image-gen` の「更新ツール」を押す。
+**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行する（VS Code を終了して更新した場合は、起動し直す）。画像生成 MCP を更新した場合は、ツール選択で `slide-image-gen` の「更新ツール」を押す。
 
 導入先のファイルは一式が差し替わる。作成済みの作業フォルダは、雛形を複製したものとして独立して扱うため更新されない。
 `env-setup` の再実行は通常不要で、必要な道具が増えた場合や、動作しなくなった場合に実行する。
