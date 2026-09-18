@@ -74,8 +74,8 @@ MCP が導入されていない環境では画像を作れない。図の構成�
 
    矩形は広めに取って `autotrim` に詰めさせる。近接するラベル文字を矩形に含めない（含めると編集できない文字になる）。`--map` が出す px 矩形と同座標・同サイズで配置すれば位置が合う。
 6. **pptx 生成**: `deck-src/<name>.js` にヘルパーで定義し、`deck.json` の `parts` を差し替えて `node build.js --name <name>` を実行する。しおり名・規格の正規化と検査・PDF・PNG まで済む。
-7. **レンダリング比較**: `uv run <このスキル>/scripts/render_and_compare.py <name>.pdf preview --source source/<img>.png` で `preview/compare.png` を作り、元画像と上下に見比べる。
-8. **補正**: 崩れを直して 6〜7 を繰り返す。**最低 1 回は補正する。**
+7. **レンダリング比較**: `uv run <このスキル>/scripts/render_and_compare.py <name>.pdf preview --source source/<img>.png` で `preview/compare.png` を作り、元画像と上下に見比べる。**1 巡で読む画像は 1 枚にする。** 比較画像を読んだら、同じページの `preview/<name>-NNN.png` は読まない（比較画像の下段が同じもの）。
+8. **補正**: 崩れを直して 6〜7 を繰り返す。**最低 1 回は補正する。** 位置を詰めるときは、`uv run <このスキル>/scripts/grid_overlay.py preview/<name>-001.png preview/grid-001.png` のようにレンダリング結果にグリッドをかけて読む。元画像のグリッドは設計の読み取り用で、出来上がりの位置合わせには使わない。
 9. **検証と納品**: `uv run <このスキル>/scripts/inspect_pptx.py <name>.pptx --json validation.json` で警告 0 を確認する。`inspect_pptx.py` が見るのは編集できるかどうかだけで、崩れと規範は見ていない。崩れは手順 7〜8 の比較で確かめる。**全ページの体裁と文章規範の検査（[../pptx-lint/SKILL.md](../pptx-lint/SKILL.md)）は、利用者が明示的に求めた場合だけ呼ぶ**（全ページの PNG を読んで規範と照合するため、時間とコストがかかる。呼ぶときは作業ディレクトリと、元にした原稿があればそのパスを添え、作成・変更したのが資料の一部であれば `--pages` でその範囲も添える）。pptx と同名の PDF も添える。
 10. **完了の報告**: 成果物の pptx と PDF は、**絶対パスで**示す（`PowerPoint: <work の絶対パス>/<name>.pptx`、`PDF: <work の絶対パス>/<name>.pdf`）。ファイル名やリンクの表示名だけにしない。作業ディレクトリは資料ごとに異なり、表示する画面によってはリンク先が見えないため、利用者が成果物を見失う。修正して再ビルドしたときの報告も同じ。PDF を出せなかった場合は、パスの代わりにその理由を書く。全ページの体裁と規範の検査（pptx-lint）を実施していなければ、そのことと、求めれば実施できることを 1 行添える。
 
