@@ -201,7 +201,7 @@ claude plugin update pptx-as-code@pptx-as-code
 
 **更新に失敗した場合は、VS Code や GitHub Copilot CLI を終了してから再実行する。** 起動中の画像生成 MCP が導入先のファイルを使用しているため、そのままでは更新に失敗することがある。
 
-**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行する（VS Code を終了して更新した場合は、起動し直す）。画像生成 MCP を更新した場合は、ツール選択で `slide-image-gen` の「更新ツール」を押す。
+**更新後はクライアントを再起動する。** プラグインと MCP の定義は起動時にのみ読み込まれる。VS Code の GitHub Copilot Chat では「Developer: Reload Window」を実行する（VS Code を終了して更新した場合は、起動し直す）。画像生成 MCP を更新した場合は、チャットにツール選択があれば、`slide-image-gen` の「更新ツール」を押す。
 
 導入先のファイルは一式が差し替わる。作成済みの作業フォルダは、雛形を複製したものとして独立して扱うため更新されない。
 `env-setup` の再実行は通常不要で、必要な道具が増えた場合や、動作しなくなった場合に実行する。

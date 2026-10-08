@@ -60,7 +60,7 @@ env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin sh -c '
 | OS | 対処 |
 |---|---|
 | Linux / WSL / コンテナ | uv は `sudo ln -sf ~/.local/bin/uv /usr/local/bin/uv && sudo ln -sf ~/.local/bin/uvx /usr/local/bin/uvx`。node は apt で入れていれば `/usr/bin` にあるので不要で、nvm などで入れた場合は `sudo ln -sf "$(command -v node)" /usr/local/bin/node`（`/usr/local/bin` はどのクライアントの PATH にも入っている） |
-| macOS | Homebrew の bin（`/opt/homebrew/bin` など）が上の PATH に無ければ、同様にリンクする |
+| macOS | 上の確認は Homebrew の bin（`/opt/homebrew/bin` など）を含まないため、引けないと出る。ログインシェルの PATH を引き継いで起動するクライアント（デスクトップアプリなど）には届くので、ここではリンクしない。§5 で MCP が起動しなかった場合だけ、同様にリンクする |
 | Windows | winget で入れると利用者の PATH に追加されるが、**既に起動しているプロセスには届かない**。VS Code とターミナルを再起動する |
 
 **クライアントの設定ファイル（`mcp.json` など）を絶対パスに書き換えて回避しない。** プラグインを更新すると消え、パスは OS と利用者ごとに違うので配布もできない。直すのは PATH の側。
@@ -106,6 +106,8 @@ Azure CLI は Ubuntu / WSL が `curl -sL https://aka.ms/InstallAzureCLIDeb | sud
 | `(コンテナ / ホストの OS は不明)` | Docker を動かしている端末。どの OS かを利用者に確かめてから、その OS 向けのコマンドを示す |
 | `(WSL)` | **Windows**。WSL からなら `cat /mnt/c/Users/<Windows のユーザー名>/.npmrc` でも読める |
 | 表記なし（Windows / Linux / macOS） | その端末 |
+
+**表記なし（端末で直接動いている）の場合は、自分で確かめられる。** 調べ先が自分自身なので、まず `npm config get registry` と `pip config list` を実行する。組織が管理する端末では、npm と pip には取得先が配られていても、uv には配られていないことがある。どちらかに組織の取得先があれば、それを使って 3.2 に進む（uv には pip と同じ取得先を書く）。どちらも既定値なら、利用者に尋ねる。
 
 **調べ先は 1 つに名指しする。** 「Linux ホストなら…、Windows なら…」と選択肢を並べない。利用者はどちらが自分に当てはまるか判断できず、間違った方（WSL など）を実行して「設定は無い」という誤った答えが返る。
 
@@ -224,7 +226,7 @@ Azure サブスクリプションが必要。**環境構築の一部としてデ
 | 使っているもの | 手順 |
 |---|---|
 | GitHub Copilot CLI / Claude Code | 一度終了して起動し直す |
-| VS Code の Copilot Chat | コマンドパレットで **Developer: Reload Window**。そのあとツール選択で `slide-image-gen` の**更新ツール**を押し、現れた `generate_slide_image` にチェックを入れる |
+| VS Code の Copilot Chat | コマンドパレットで **Developer: Reload Window**。チャットにツール選択がある場合は、`slide-image-gen` の**更新ツール**を押し、現れた `generate_slide_image` にチェックを入れる |
 
 初回は `uv` が依存（約 80 個）を取得するため、数十秒かかる。2 回目以降はキャッシュから起動する。
 

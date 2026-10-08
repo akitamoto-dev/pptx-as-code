@@ -25,6 +25,7 @@ LibreOffice のユーザープロファイルは <出力ディレクトリ>/.sof
 """
 import argparse
 import glob
+import json
 import os
 import pathlib
 import platform
@@ -95,18 +96,72 @@ def find_soffice():
     return None
 
 
+def mac_font_substitution(profile_dir, pptx):
+    """macOS で、手元に無い本体のフォントを theme.json の代わりの候補で描かせる。
+
+    macOS の LibreOffice は、手元に無い本体のフォントを太さごとに別のフォント（丸ゴシックなど）で描く。
+    作業フォルダーの deck-src/theme.json の代わりの候補のうち手元にある最初のものを、置換表として
+    プロファイルに書く。pptx のフォント名は変えない。template/build.js の macFontSubstitution と揃えてある。
+    """
+    theme = os.path.join(os.path.dirname(os.path.abspath(pptx)), "deck-src", "theme.json")
+    try:
+        with open(theme, encoding="utf-8") as f:
+            fonts = json.load(f)["fonts"]
+    except (OSError, ValueError, KeyError):
+        return
+    r = subprocess.run(
+        ["osascript", "-l", "JavaScript", "-e",
+         'ObjC.import("AppKit"); ObjC.deepUnwrap($.NSFontManager.sharedFontManager.availableFontFamilies).join("\\n")'],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        return
+    installed = set(r.stdout.split("\n"))
+    if fonts.get("body") in installed:
+        return
+    sub = next((f for f in fonts.get("fallback", {}).get("body", []) if f in installed), None)
+    if not sub:
+        return
+
+    def esc(t):
+        return str(t).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+    def prop(name, value):
+        return f'<prop oor:name="{name}" oor:op="fuse"><value>{value}</value></prop>'
+
+    xcu = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema"'
+        ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n'
+        f'<item oor:path="/org.openoffice.Office.Common/Font/Substitution">{prop("Replacement", "true")}</item>\n'
+        '<item oor:path="/org.openoffice.Office.Common/Font/Substitution/FontPairs"><node oor:name="_0" oor:op="replace">'
+        + prop("Always", "true") + prop("OnScreenOnly", "false")
+        + prop("ReplaceFont", esc(fonts["body"])) + prop("SubstituteFont", esc(sub))
+        + "</node></item>\n</oor:items>\n"
+    )
+    user = pathlib.Path(profile_dir, "user")
+    user.mkdir(parents=True, exist_ok=True)
+    (user / "registrymodifications.xcu").write_text(xcu, encoding="utf-8")
+
+
 def to_pdf(pptx, out_dir):
     """pptx を LibreOffice で PDF にし、PDF のパスを返す。"""
     soffice = find_soffice()
     if not soffice:
         raise RuntimeError("LibreOffice（soffice）が見つからない。環境変数 SOFFICE に実行ファイルのパスを設定する")
-    profile = pathlib.Path(out_dir, ".soffice-profile").resolve().as_uri()
+    profile_dir = pathlib.Path(out_dir, ".soffice-profile").resolve()
+    profile = profile_dir.as_uri()
     pdf = os.path.join(out_dir, os.path.splitext(os.path.basename(pptx))[0] + ".pdf")
     if os.path.exists(pdf):
         os.remove(pdf)
+    # macOS の --headless は OS のフォントを使わず同梱フォントで描くため、日本語が豆腐になる。
+    # 描画方式を osx にすると OS の日本語フォントで描ける
+    env = dict(os.environ, SAL_USE_VCLPLUGIN="osx") if sys.platform == "darwin" else None
+    if sys.platform == "darwin":
+        mac_font_substitution(profile_dir, pptx)
     r = subprocess.run(
         [soffice, f"-env:UserInstallation={profile}", "--headless", "--convert-to", "pdf", "--outdir", out_dir, pptx],
-        capture_output=True, text=True, timeout=300,
+        capture_output=True, text=True, timeout=300, env=env,
     )
     if not os.path.exists(pdf):
         raise RuntimeError("PDF 変換に失敗\n" + (r.stdout or "") + (r.stderr or ""))

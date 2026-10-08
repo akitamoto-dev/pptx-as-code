@@ -130,6 +130,10 @@ if (WIN) {
   try { found = fs.readdirSync(dir).filter((f) => /^(YuGoth|meiryo|msgothic|msmincho)/i.test(f)); } catch (_) { /* 読めなければ無しとして扱う */ }
   if (found.length) { row("日本語フォント", "OK", `${found[0]} ほか (${dir})`); FONT = true; }
   else row("日本語フォント", "なし", `${dir} に日本語フォントが見つからない`);
+} else if (process.platform === "darwin") {
+  // macOS は日本語フォント（ヒラギノ、游ゴシック体）を OS に同梱している。fc-list は無いことが多い
+  row("日本語フォント", "OK", "OS 同梱（ヒラギノ、游ゴシック体）");
+  FONT = true;
 } else if (which("fc-list")) {
   const f = (run("fc-list", [":", "family"]).stdout || "").split("\n")
     .find((l) => /yu gothic|meiryo|noto sans cjk|noto sans jp|ipa/i.test(l));

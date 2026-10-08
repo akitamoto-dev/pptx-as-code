@@ -191,10 +191,16 @@ function toPdf() {
   if (fs.existsSync(PDF)) fs.unlinkSync(PDF);
   const soffice = findSoffice();
   if (!soffice) { note("(3) LibreOffice が無いため PDF は生成しない。pptx を PowerPoint で開いて確認する"); return false; }
-  fontCheck(JSON.parse(fs.readFileSync(path.join(SRC, "theme.json"), "utf8")).fonts.body);
+  const fonts = JSON.parse(fs.readFileSync(path.join(SRC, "theme.json"), "utf8")).fonts;
+  fontCheck(fonts.body);
   // LibreOffice はプロファイルを共有すると別ディレクトリの同時変換が無言で失敗するため、作業ディレクトリ配下に分離する
-  const profile = pathToFileURL(path.join(WORK, ".soffice-profile")).href;
-  const r = run(soffice, [`-env:UserInstallation=${profile}`, "--headless", "--convert-to", "pdf", "--outdir", WORK, OUT], { timeout: 180000 });
+  const profileDir = path.join(WORK, ".soffice-profile");
+  const profile = pathToFileURL(profileDir).href;
+  // macOS の --headless は OS のフォントを使わず同梱フォントで描くため、日本語が豆腐になる。
+  // 描画方式を osx にすると OS の日本語フォントで描ける
+  const env = process.platform === "darwin" ? { ...process.env, SAL_USE_VCLPLUGIN: "osx" } : process.env;
+  if (process.platform === "darwin") macFontSubstitution(profileDir, fonts);
+  const r = run(soffice, [`-env:UserInstallation=${profile}`, "--headless", "--convert-to", "pdf", "--outdir", WORK, OUT], { timeout: 180000, env });
   if (!fs.existsSync(PDF)) { console.error("エラー: PDF 変換に失敗\n" + (r.stdout || "") + (r.stderr || "")); return false; }
   console.log(`(3) pdf: ${path.relative(WORK, PDF)}（LibreOffice）`);
   return true;
@@ -207,6 +213,27 @@ function fontCheck(body) {
   if (r.status === 0 && !r.stdout.includes(body)) {
     note(`フォント「${body}」が手元に無いため、PDF と PNG は代替フォントで描画される。pptx には名前が入るので PowerPoint では正しく出る。theme.json は変更しない`);
   }
+}
+// macOS の LibreOffice は、手元に無い本体のフォントを太さごとに別のフォント（丸ゴシックなど）で描く。
+// theme.json の代わりの候補のうち手元にある最初のものを置換表としてプロファイルに書き、PDF と PNG をそれで描かせる。
+// pptx のフォント名は変えない。render_and_compare.py の mac_font_substitution と揃えてある
+function macFontSubstitution(profileDir, fonts) {
+  const r = run("osascript", ["-l", "JavaScript", "-e", 'ObjC.import("AppKit"); ObjC.deepUnwrap($.NSFontManager.sharedFontManager.availableFontFamilies).join("\\n")']);
+  if (r.status !== 0) return;
+  const installed = new Set(r.stdout.split("\n"));
+  if (installed.has(fonts.body)) return;
+  const sub = ((fonts.fallback && fonts.fallback.body) || []).find((f) => installed.has(f));
+  if (!sub) return;
+  const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const prop = (name, value) => `<prop oor:name="${name}" oor:op="fuse"><value>${value}</value></prop>`;
+  const xcu = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n'
+    + `<item oor:path="/org.openoffice.Office.Common/Font/Substitution">${prop("Replacement", "true")}</item>\n`
+    + `<item oor:path="/org.openoffice.Office.Common/Font/Substitution/FontPairs"><node oor:name="_0" oor:op="replace">`
+    + prop("Always", "true") + prop("OnScreenOnly", "false") + prop("ReplaceFont", esc(fonts.body)) + prop("SubstituteFont", esc(sub))
+    + "</node></item>\n</oor:items>\n";
+  fs.mkdirSync(path.join(profileDir, "user"), { recursive: true });
+  fs.writeFileSync(path.join(profileDir, "user", "registrymodifications.xcu"), xcu);
 }
 
 // ---- (4) PNG 化 ----
